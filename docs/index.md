@@ -27,7 +27,7 @@ More in [Getting started](getting-started.md).
 | I want to... | Read |
 |---|---|
 | Run a scan | [Getting started](getting-started.md) |
-| Understand the code | [How it works](how-it-works.md) |
+| Understand the code | [How it works](how-it-works.md) and [Architecture](architecture.md) |
 | Add a new check | [Writing a check](writing-a-check.md) |
 | Run or write tests | [Testing](testing.md) |
 | See the plan | [Roadmap](roadmap.md) and [What's done](progress.md) |

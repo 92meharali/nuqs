@@ -21,6 +21,8 @@ Only scan networks you own or have permission to scan.
 
 ## What's here
 
+The full, always up to date map (diagram plus every file) is in [docs/architecture.md](docs/architecture.md). It's rebuilt from the code on every push.
+
 | Folder | What |
 |---|---|
 | `cmd/nuqs` | the `nuqs` binary |
@@ -35,6 +37,7 @@ Only scan networks you own or have permission to scan.
 go test -race ./...                                  # unit tests
 go test -tags integration ./test/integration         # needs nmap
 golangci-lint run                                    # lint, also checks every public thing has a doc comment
+go run ./tools/archdiagram                           # rebuild the architecture page (CI does this on every push)
 ./scripts/gen-api-docs.sh && mkdocs serve            # docs website locally
 ```
 

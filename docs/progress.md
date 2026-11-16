@@ -35,6 +35,7 @@ All of this lives in the [nessus-dissection](https://github.com/PremadeS/nessus-
 - [x] Tests: unit tests for everything, fake servers for each check, fuzz tests for both parsers, an integration test with real Nmap, ~97% coverage
 - [x] CI: format, vet, lint (including "everything public is documented"), race detector, coverage gate, fuzzing, integration, govulncheck, build
 - [x] Docs website built and published from CI, with API pages generated from code comments
+- [x] Architecture page (diagram, package table and file map) generated from the code and updated by CI on every push, with a test that checks it against `go list`
 - [x] Zero dependencies, standard library only
 
 ## Next

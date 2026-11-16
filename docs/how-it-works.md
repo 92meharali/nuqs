@@ -13,19 +13,9 @@ targets ──► target.Parse ──► Nmap ──► hosts + services ──�
 4. **Run checks in parallel.** Each check gets its own timeout. If a check errors, hangs or even panics, it's recorded and the scan keeps going.
 5. **Report.** Findings are sorted worst first, with evidence and a fix.
 
-## Packages
+## Where the code lives
 
-| Package | Job |
-|---|---|
-| `cmd/nuqs` | The `nuqs` binary. Only wiring, no logic. |
-| `internal/cli` | Command line parsing and the scan command |
-| `internal/target` | Validates and counts targets |
-| `internal/nmap` | Builds the Nmap command, runs it, parses the XML |
-| `internal/check` | The `Check` interface, which is the main extension point |
-| `internal/engine` | Runs a scan from start to end |
-| `internal/model` | Shared types: Host, Service, Finding, Severity |
-| `internal/output` | Text and JSON reports |
-| `checks/...` | The built-in checks, one folder each |
+See [Architecture](architecture.md). It shows every package, what it does, what it uses, and every file in the repo. It's generated from the code on every push, so it's always right.
 
 ## Rules we keep
 

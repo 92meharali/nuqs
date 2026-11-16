@@ -48,6 +48,7 @@ Every push and PR runs:
 | Build | the binary doesn't build or `nuqs version` fails |
 | govulncheck | a known vulnerability affects our code or Go version |
 | Docs | the website doesn't build (broken links and so on) |
+| Architecture | the diagram generator disagrees with `go list` about how packages connect |
 
 ## Rules for tests
 

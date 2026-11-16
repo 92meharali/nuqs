@@ -1,0 +1,42 @@
+name: Architecture diagram
+
+# On every push, rebuild docs/architecture.md from the code and commit it if
+# it changed. Commits made with GITHUB_TOKEN don't start new workflow runs,
+# so this can't loop.
+on:
+  push:
+    branches: ["**"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: architecture-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Test the generator first, so we never commit a wrong diagram
+        run: go test ./tools/archdiagram
+
+      - name: Rebuild the page
+        run: go run ./tools/archdiagram
+
+      - name: Commit if it changed
+        run: |
+          if git diff --quiet -- docs/architecture.md; then
+            echo "Architecture page already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/architecture.md
+          git commit -m "update architecture diagram"
+          git push
