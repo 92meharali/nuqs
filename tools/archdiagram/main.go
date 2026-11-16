@@ -44,6 +44,10 @@ func run(root string, check bool) int {
 		fmt.Println(outFile, "is up to date")
 		return 0
 	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, "archdiagram:", err)
+		return 1
+	}
 	if err := os.WriteFile(path, page, 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, "archdiagram:", err)
 		return 1

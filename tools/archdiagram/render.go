@@ -19,10 +19,7 @@ var collapse = []string{"checks"}
 var folderNotes = map[string]string{
 	"cmd":               "Programs you can run. Each folder here is one binary.",
 	"internal":          "The core of Nuqs. Only code in this repo can import these.",
-	"test":              "Tests that need real tools, like Nmap.",
 	"tools":             "Helper programs for developing Nuqs. Not part of the scanner.",
-	"docs":              "The website. Edit these pages, CI publishes them.",
-	"docs/design":       "Why we made the big decisions.",
 	"scripts":           "Small helper scripts used by CI.",
 	".github":           "GitHub settings.",
 	".github/workflows": "CI jobs. They run on every push and pull request.",
@@ -87,7 +84,7 @@ func Render(r *Repo) string {
 	}
 
 	w("\n## What's where\n\n")
-	w("Every file in the repo, as git sees it. Files CI generates (like the API pages) aren't listed.\n\n")
+	w("Every file in the repo, as git sees it, except the `docs/` and `test/` folders.\n\n")
 	w("```text\n%s```\n", tree(r))
 	return b.String()
 }

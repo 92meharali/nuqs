@@ -46,16 +46,10 @@ func Scan(root string) (*Repo, error) {
 			return nil, err
 		}
 	}
-	// This page is part of the repo too. Always list it, so running the
-	// tool twice gives the same result even before the page exists.
-	if !slices.Contains(files, outFile) {
-		files = append(files, outFile)
-	}
-
 	r := &Repo{Module: module}
 	pkgs := map[string]*Package{}
 	for _, rel := range files {
-		if generated(rel) {
+		if excluded(rel) {
 			continue
 		}
 		r.Files = append(r.Files, rel)
@@ -111,9 +105,18 @@ func addGoFile(pkgs map[string]*Package, module, root, rel string) error {
 	return nil
 }
 
-// generated reports files that CI builds, which aren't committed.
-func generated(rel string) bool {
-	return strings.HasPrefix(rel, "docs/api/") || strings.HasPrefix(rel, "site/")
+// skipFolders are left out of the page completely. docs/ and test/ don't
+// help someone find their way around the code, and site/ is generated.
+var skipFolders = []string{"docs", "test", "site"}
+
+// excluded reports whether a file is inside one of skipFolders.
+func excluded(rel string) bool {
+	for _, d := range skipFolders {
+		if strings.HasPrefix(rel, d+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 func inTestdata(rel string) bool {

@@ -59,15 +59,21 @@ func TestScanFixture(t *testing.T) {
 		{Dir: "checks/x", Summary: "Checks X | with a pipe.", Imports: []string{"a"}},
 		{Dir: "checks/y", Imports: []string{"a", "b"}},
 		{Dir: "cmd/app", Summary: "The demo program.", Imports: []string{"b"}},
-		{Dir: "test/e2e", Summary: "Runs everything end to end.", Imports: []string{"b"}, TestOnly: true},
+		{Dir: "smoke", Summary: "Runs quick checks of the whole demo.", Imports: []string{"b"}, TestOnly: true},
 	}
 	if !reflect.DeepEqual(r.Packages, want) {
 		t.Errorf("packages:\n got %+v\nwant %+v", r.Packages, want)
 	}
-	// Every file shows up in the tree, including testdata and the page itself.
-	for _, f := range []string{"a/testdata/fixture.go", "docs/index.md", "go.mod", outFile} {
+	// Every file shows up in the tree, including testdata.
+	for _, f := range []string{"a/testdata/fixture.go", "smoke/smoke_test.go", "go.mod"} {
 		if !slices.Contains(r.Files, f) {
 			t.Errorf("file %s is missing from the tree", f)
+		}
+	}
+	// docs/ and test/ are left out completely.
+	for _, f := range r.Files {
+		if strings.HasPrefix(f, "docs/") || strings.HasPrefix(f, "test/") {
+			t.Errorf("%s should be left out", f)
 		}
 	}
 	if !slices.IsSorted(r.Files) {
@@ -88,13 +94,13 @@ func TestRenderFixture(t *testing.T) {
 		"n_checks__ --> n_a",
 		"n_checks__ --> n_b",
 		"n_cmd_app --> n_b",
-		"n_test_e2e -.-> n_b", // test-only packages get dotted arrows
+		"n_smoke -.-> n_b", // test-only packages get dotted arrows
 		"Dotted arrows come from test-only packages.",
 		"| `b` | The middle layer. | `a` |",
 		"| `checks/x` | Checks X \\| with a pipe. | `a` |", // pipes can't break the table
 		"| `checks/y` | - | `a`, `b` |",
 		"| `a` | Holds the shared types. | nothing else in Nuqs |",
-		"| `test/e2e` (tests) |",
+		"| `smoke` (tests) | Runs quick checks of the whole demo. | `b` |",
 		"├── a/                            # Holds the shared types.",
 		"│   ├── testdata/                 # Sample files used by the tests next to it.",
 		"├── cmd/                          # Programs you can run.",
@@ -102,6 +108,12 @@ func TestRenderFixture(t *testing.T) {
 	} {
 		if !strings.Contains(page, want) {
 			t.Errorf("page is missing %q\n\n%s", want, page)
+		}
+	}
+	// docs/ and test/ must not appear in the diagram, the table or the tree.
+	for _, gone := range []string{"e2e", "index.md", "── docs/", "── test/", "n_test_", "| `test/"} {
+		if strings.Contains(page, gone) {
+			t.Errorf("page contains %q, but docs/ and test/ must be left out", gone)
 		}
 	}
 	if strings.Count(page, "n_checks__ --> n_a") != 1 {

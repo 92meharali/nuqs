@@ -5,7 +5,7 @@
 
 ## How the packages connect
 
-An arrow means "uses". For example `internal/cli --> internal/engine` means the CLI calls the engine. Dotted arrows come from test-only packages.
+An arrow means "uses". For example `internal/cli --> internal/engine` means the CLI calls the engine.
 
 ```mermaid
 flowchart LR
@@ -24,9 +24,6 @@ flowchart LR
     n_internal_nmap["internal/nmap"]
     n_internal_output["internal/output"]
     n_internal_target["internal/target"]
-  end
-  subgraph n_g_test ["test"]
-    n_test_integration["test/integration"]
   end
   subgraph n_g_tools ["tools"]
     n_tools_archdiagram["tools/archdiagram"]
@@ -48,10 +45,6 @@ flowchart LR
   n_internal_engine --> n_internal_model
   n_internal_nmap --> n_internal_model
   n_internal_output --> n_internal_engine
-  n_test_integration -.-> n_checks
-  n_test_integration -.-> n_internal_cli
-  n_test_integration -.-> n_internal_engine
-  n_test_integration -.-> n_internal_nmap
 ```
 
 ## Packages
@@ -70,12 +63,11 @@ flowchart LR
 | `internal/nmap` | Runs Nmap and turns its XML output into model.Host values. | `internal/model` |
 | `internal/output` | Prints a scan report, either as a table for people or as JSON for tools. | `internal/engine` |
 | `internal/target` | Checks what the user asked us to scan before it ever reaches Nmap. | nothing else in Nuqs |
-| `test/integration` (tests) | Runs the whole scan with the real Nmap binary. | `checks`, `internal/cli`, `internal/engine`, `internal/nmap` |
 | `tools/archdiagram` | Writes docs/architecture.md, a diagram and a map of the repo built straight from the code. | nothing else in Nuqs |
 
 ## What's where
 
-Every file in the repo, as git sees it. Files CI generates (like the API pages) aren't listed.
+Every file in the repo, as git sees it, except the `docs/` and `test/` folders.
 
 ```text
 .
@@ -99,21 +91,6 @@ Every file in the repo, as git sees it. Files CI generates (like the API pages) 
 ├── cmd/                          # Programs you can run. Each folder here is one binary.
 │   └── nuqs/                     # The Nuqs vulnerability scanner.
 │       └── main.go
-├── docs/                         # The website. Edit these pages, CI publishes them.
-│   ├── design/                   # Why we made the big decisions.
-│   │   ├── content-pipeline.md
-│   │   ├── decisions.md
-│   │   └── differentiators.md
-│   ├── architecture.md
-│   ├── contributing.md
-│   ├── getting-started.md
-│   ├── how-it-works.md
-│   ├── index.md
-│   ├── progress.md
-│   ├── requirements.txt
-│   ├── roadmap.md
-│   ├── testing.md
-│   └── writing-a-check.md
 ├── internal/                     # The core of Nuqs. Only code in this repo can import these.
 │   ├── check/                    # Defines what a check is.
 │   │   ├── check.go
@@ -143,9 +120,6 @@ Every file in the repo, as git sees it. Files CI generates (like the API pages) 
 ├── scripts/                      # Small helper scripts used by CI.
 │   ├── docs.sh
 │   └── gen-api-docs.sh
-├── test/                         # Tests that need real tools, like Nmap.
-│   └── integration/              # Runs the whole scan with the real Nmap binary.
-│       └── integration_test.go
 ├── tools/                        # Helper programs for developing Nuqs. Not part of the scanner.
 │   └── archdiagram/              # Writes docs/architecture.md, a diagram and a map of the repo built straight from the code.
 │       ├── testdata/             # Sample files used by the tests next to it.
@@ -167,6 +141,8 @@ Every file in the repo, as git sees it. Files CI generates (like the API pages) 
 │       │       │       └── main.go
 │       │       ├── docs/
 │       │       │   └── index.md
+│       │       ├── smoke/
+│       │       │   └── smoke_test.go
 │       │       ├── test/
 │       │       │   └── e2e/
 │       │       │       └── e2e_test.go
