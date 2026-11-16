@@ -1,0 +1,15 @@
+# Build output
+/nuqs
+/dist/
+*.test
+*.out
+
+# Generated docs (CI builds these from code comments)
+/docs/api/
+/site/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

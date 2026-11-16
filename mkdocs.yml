@@ -1,0 +1,55 @@
+site_name: Nuqs
+site_description: A simple, open-source network vulnerability scanner built on Nmap.
+site_url: https://premades.github.io/nuqs/
+repo_url: https://github.com/PremadeS/nuqs
+repo_name: PremadeS/nuqs
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Dark mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Light mode
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - How it works: how-it-works.md
+  - Writing a check: writing-a-check.md
+  - Testing: testing.md
+  - Contributing: contributing.md
+  - Plan:
+      - Roadmap (4 months): roadmap.md
+      - What's done: progress.md
+  - Design:
+      - Decisions: design/decisions.md
+      - Why people would switch: design/differentiators.md
+      - Keeping up with new CVEs: design/content-pipeline.md
+  - API reference: api/index.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.details
+
+validation:
+  nav:
+    omitted_files: ignore # the generated API pages are linked from api/index.md
+  links:
+    not_found: warn
+    anchors: warn

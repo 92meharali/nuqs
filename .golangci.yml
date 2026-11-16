@@ -1,0 +1,35 @@
+version: "2"
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - misspell
+    - bodyclose
+    - revive # used only to make sure everything public has a doc comment
+  settings:
+    revive:
+      rules:
+        - name: exported
+          arguments: ["disableStutteringCheck"]
+        - name: package-comments
+    errcheck:
+      exclude-functions:
+        # Printing to the terminal and closing things we're done with,
+        # there's nothing useful to do if these fail.
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (io.Closer).Close
+        - (io.ReadCloser).Close
+        - (net.Conn).Close
+        - (net.Listener).Close
+        - (*os.File).Close
+  exclusions:
+    rules:
+      # Test helpers write to fake servers and ignore errors on purpose.
+      - path: _test\.go
+        linters: [errcheck]
+
+formatters:
+  enable:
+    - gofmt

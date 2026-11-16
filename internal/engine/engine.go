@@ -1,0 +1,264 @@
+// Package engine runs a scan from start to end.
+//
+// The flow is simple:
+//
+//  1. ask the HostScanner (Nmap) which hosts and services are up
+//  2. for every service, pick the checks that apply to it
+//  3. run those checks in parallel, each with its own timeout
+//  4. collect findings and errors into a Report
+//
+// One bad check can never break the scan. Errors, timeouts and even panics
+// are caught and reported, and the other checks keep going.
+package engine
+
+import (
+	"cmp"
+	"context"
+	"fmt"
+	"net/netip"
+	"runtime/debug"
+	"slices"
+	"sync"
+	"time"
+
+	"github.com/PremadeS/nuqs/internal/check"
+	"github.com/PremadeS/nuqs/internal/model"
+)
+
+// Defaults used when the Engine fields are left at zero.
+const (
+	DefaultWorkers      = 10
+	DefaultCheckTimeout = 30 * time.Second
+)
+
+// HostScanner finds live hosts and their services. In real scans this is
+// nmap.Scanner, in tests it's a fake.
+type HostScanner interface {
+	Scan(ctx context.Context, targets []string) ([]model.Host, error)
+}
+
+// EventKind says what happened during a scan.
+type EventKind string
+
+// Event kinds, in the order they happen.
+const (
+	DiscoveryStarted EventKind = "discovery_started"
+	DiscoveryDone    EventKind = "discovery_done" // Count = hosts found
+	ChecksStarted    EventKind = "checks_started" // Count = checks to run
+	CheckDone        EventKind = "check_done"     // one check finished on one service
+	ScanDone         EventKind = "scan_done"
+)
+
+// Event is sent to OnEvent so the CLI (and later the API) can show progress.
+type Event struct {
+	Kind    EventKind
+	Host    string
+	Port    int
+	CheckID string
+	Count   int
+	Err     error // set on CheckDone when the check failed
+}
+
+// CheckError records a check that couldn't finish. It is not a finding.
+type CheckError struct {
+	CheckID string `json:"check_id"`
+	Host    string `json:"host"`
+	Port    int    `json:"port"`
+	Error   string `json:"error"`
+}
+
+// Report is everything a scan produced.
+type Report struct {
+	Targets  []string        `json:"targets"`
+	Started  time.Time       `json:"started"`
+	Finished time.Time       `json:"finished"`
+	Hosts    []model.Host    `json:"hosts"`
+	Findings []model.Finding `json:"findings"`
+	Errors   []CheckError    `json:"errors"`
+}
+
+// Engine holds the scan setup. The zero value is not usable, Scanner must be set.
+type Engine struct {
+	Scanner      HostScanner
+	Checks       []check.Check
+	Workers      int           // how many checks run at once, 0 means DefaultWorkers
+	CheckTimeout time.Duration // max time for one check, 0 means DefaultCheckTimeout
+	OnEvent      func(Event)   // optional, called one event at a time
+}
+
+type job struct {
+	c check.Check
+	t check.Target
+}
+
+// Run scans the targets. Targets must already be validated (see package target).
+//
+// If ctx is cancelled the scan stops early and Run returns what it has so far
+// together with ctx's error.
+func (e *Engine) Run(ctx context.Context, targets []string) (*Report, error) {
+	if e.Scanner == nil {
+		return nil, fmt.Errorf("engine: no scanner set")
+	}
+	if err := check.Validate(e.Checks); err != nil {
+		return nil, fmt.Errorf("engine: bad checks: %w", err)
+	}
+
+	rep := &Report{Targets: targets, Started: time.Now(), Findings: []model.Finding{}, Errors: []CheckError{}}
+	var emitMu sync.Mutex
+	emit := func(ev Event) {
+		if e.OnEvent != nil {
+			emitMu.Lock()
+			defer emitMu.Unlock()
+			e.OnEvent(ev)
+		}
+	}
+
+	emit(Event{Kind: DiscoveryStarted})
+	hosts, err := e.Scanner.Scan(ctx, targets)
+	if err != nil {
+		return nil, fmt.Errorf("discovery failed: %w", err)
+	}
+	rep.Hosts = slices.Clone(hosts) // we sort it later, so never touch the scanner's slice
+	emit(Event{Kind: DiscoveryDone, Count: len(hosts)})
+
+	var jobs []job
+	for _, h := range hosts {
+		for _, svc := range h.Services {
+			for _, c := range e.Checks {
+				if check.Applies(c.Info(), svc) {
+					jobs = append(jobs, job{c: c, t: check.Target{Host: h.Address, Service: svc}})
+				}
+			}
+		}
+	}
+	emit(Event{Kind: ChecksStarted, Count: len(jobs)})
+
+	var mu sync.Mutex
+	e.runJobs(ctx, jobs, func(j job, res *check.Result, err error) {
+		in := j.c.Info()
+		ev := Event{Kind: CheckDone, Host: j.t.Host, Port: j.t.Service.Port, CheckID: in.ID, Err: err}
+		mu.Lock()
+		switch {
+		case err != nil:
+			rep.Errors = append(rep.Errors, CheckError{CheckID: in.ID, Host: j.t.Host, Port: j.t.Service.Port, Error: err.Error()})
+		case res != nil:
+			rep.Findings = append(rep.Findings, model.Finding{
+				ID:       model.FindingID(j.t.Host, in.ID, j.t.Service.Port, j.t.Service.Protocol),
+				CheckID:  in.ID,
+				Title:    in.Title,
+				Severity: in.Severity,
+				Host:     j.t.Host,
+				Port:     j.t.Service.Port,
+				Protocol: j.t.Service.Protocol,
+				Evidence: res.Evidence,
+				Fix:      in.Fix,
+			})
+		}
+		mu.Unlock()
+		emit(ev)
+	})
+
+	sortReport(rep)
+	rep.Finished = time.Now()
+	emit(Event{Kind: ScanDone, Count: len(rep.Findings)})
+	return rep, ctx.Err()
+}
+
+// runJobs runs every job on a fixed pool of workers and calls done for each.
+func (e *Engine) runJobs(ctx context.Context, jobs []job, done func(job, *check.Result, error)) {
+	workers := e.Workers
+	if workers <= 0 {
+		workers = DefaultWorkers
+	}
+	queue := make(chan job)
+	var wg sync.WaitGroup
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := range queue {
+				res, err := e.runOne(ctx, j)
+				done(j, res, err)
+			}
+		}()
+	}
+	for _, j := range jobs {
+		select {
+		case queue <- j:
+		case <-ctx.Done():
+		}
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	close(queue)
+	wg.Wait()
+}
+
+// runOne runs a single check with a timeout and turns panics into errors.
+func (e *Engine) runOne(ctx context.Context, j job) (res *check.Result, err error) {
+	timeout := e.CheckTimeout
+	if timeout <= 0 {
+		timeout = DefaultCheckTimeout
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	type out struct {
+		res *check.Result
+		err error
+	}
+	ch := make(chan out, 1)
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				ch <- out{err: fmt.Errorf("check panicked: %v\n%s", r, debug.Stack())}
+			}
+		}()
+		r, err := j.c.Run(ctx, j.t)
+		ch <- out{r, err}
+	}()
+
+	// A well behaved check returns on ctx.Done by itself. If it doesn't,
+	// we stop waiting so one stuck check can't hang the whole scan.
+	select {
+	case o := <-ch:
+		if o.res == nil && ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("timed out after %s", timeout)
+		}
+		return o.res, o.err
+	case <-ctx.Done():
+		if ctx.Err() == context.DeadlineExceeded {
+			return nil, fmt.Errorf("timed out after %s", timeout)
+		}
+		return nil, ctx.Err()
+	}
+}
+
+// sortReport puts findings worst first, then by host, port and check, so
+// output is the same every time for the same scan.
+func sortReport(r *Report) {
+	slices.SortFunc(r.Findings, func(a, b model.Finding) int {
+		return cmp.Or(
+			cmp.Compare(b.Severity, a.Severity),
+			cmp.Compare(a.Host, b.Host),
+			cmp.Compare(a.Port, b.Port),
+			cmp.Compare(a.CheckID, b.CheckID),
+		)
+	})
+	slices.SortFunc(r.Errors, func(a, b CheckError) int {
+		return cmp.Or(cmp.Compare(a.Host, b.Host), cmp.Compare(a.Port, b.Port), cmp.Compare(a.CheckID, b.CheckID))
+	})
+	slices.SortFunc(r.Hosts, func(a, b model.Host) int { return compareAddr(a.Address, b.Address) })
+}
+
+// compareAddr sorts IPs numerically (10.0.0.2 before 10.0.0.10) and falls
+// back to plain text for anything that isn't an IP.
+func compareAddr(a, b string) int {
+	x, errA := netip.ParseAddr(a)
+	y, errB := netip.ParseAddr(b)
+	if errA == nil && errB == nil {
+		return x.Compare(y)
+	}
+	return cmp.Compare(a, b)
+}

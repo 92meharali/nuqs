@@ -1,0 +1,182 @@
+// Package cli is the "nuqs" command line. main.go only calls Run.
+//
+// Everything the CLI needs from outside (Nmap, the list of checks) comes in
+// through App, so tests can run the whole CLI without Nmap installed.
+package cli
+
+import (
+	"context"
+	"errors"
+	"flag"
+	"fmt"
+	"io"
+	"time"
+
+	"github.com/PremadeS/nuqs/internal/check"
+	"github.com/PremadeS/nuqs/internal/engine"
+	"github.com/PremadeS/nuqs/internal/nmap"
+	"github.com/PremadeS/nuqs/internal/output"
+	"github.com/PremadeS/nuqs/internal/target"
+)
+
+// Exit codes returned by Run.
+const (
+	ExitOK    = 0 // everything worked (findings or not)
+	ExitError = 1 // the scan couldn't run
+	ExitUsage = 2 // the command was typed wrong
+)
+
+// App holds what the CLI depends on.
+type App struct {
+	Version string
+	Stdout  io.Writer
+	Stderr  io.Writer
+	// NewRunner returns the Nmap runner to use. The path comes from --nmap.
+	NewRunner func(path string) nmap.Runner
+	// Checks returns the checks to run.
+	Checks func() []check.Check
+}
+
+const usage = `Nuqs is a simple network vulnerability scanner.
+
+Usage:
+  nuqs scan [flags] <target>...   scan targets (IP, CIDR, range like 10.0.0.1-20, or hostname)
+  nuqs checks                     list the built-in checks
+  nuqs version                    print the version
+
+Run "nuqs scan -h" to see the scan flags.
+`
+
+// Run runs the command in args (without the program name) and returns the exit code.
+func (a *App) Run(ctx context.Context, args []string) int {
+	if len(args) == 0 {
+		fmt.Fprint(a.Stderr, usage)
+		return ExitUsage
+	}
+	switch args[0] {
+	case "scan":
+		return a.scan(ctx, args[1:])
+	case "checks":
+		return a.listChecks()
+	case "version", "--version", "-v":
+		fmt.Fprintf(a.Stdout, "nuqs %s\n", a.Version)
+		return ExitOK
+	case "help", "--help", "-h":
+		fmt.Fprint(a.Stdout, usage)
+		return ExitOK
+	default:
+		fmt.Fprintf(a.Stderr, "unknown command %q\n\n%s", args[0], usage)
+		return ExitUsage
+	}
+}
+
+func (a *App) listChecks() int {
+	for _, c := range a.Checks() {
+		in := c.Info()
+		fmt.Fprintf(a.Stdout, "%-24s %-8s %s\n", in.ID, in.Severity, in.Title)
+	}
+	return ExitOK
+}
+
+func (a *App) scan(ctx context.Context, args []string) int {
+	fs := flag.NewFlagSet("scan", flag.ContinueOnError)
+	fs.SetOutput(a.Stderr)
+	ports := fs.String("p", "", `ports to scan, like "22,80,443" or "1-1000" (default: Nmap's top 1000)`)
+	skipPing := fs.Bool("Pn", false, "scan hosts even if they don't answer ping")
+	asJSON := fs.Bool("json", false, "print the report as JSON")
+	workers := fs.Int("workers", engine.DefaultWorkers, "how many checks run at the same time")
+	timeout := fs.Duration("timeout", engine.DefaultCheckTimeout, "max time for one check")
+	force := fs.Bool("force", false, fmt.Sprintf("allow scanning more than %d addresses", target.DefaultLimit))
+	nmapPath := fs.String("nmap", "", "path to the nmap binary (default: nmap from PATH)")
+	fs.Usage = func() {
+		fmt.Fprintln(a.Stderr, "Usage: nuqs scan [flags] <target>...")
+		fs.PrintDefaults()
+	}
+
+	// Let people put flags before or after targets: "nuqs scan 10.0.0.1 -p 22".
+	var specs []string
+	rest := args
+	for {
+		if err := fs.Parse(rest); err != nil {
+			if errors.Is(err, flag.ErrHelp) {
+				return ExitOK
+			}
+			return ExitUsage
+		}
+		if fs.NArg() == 0 {
+			break
+		}
+		specs = append(specs, fs.Arg(0))
+		rest = fs.Args()[1:]
+	}
+
+	if *workers < 1 || *timeout <= 0 {
+		fmt.Fprintln(a.Stderr, "--workers must be at least 1 and --timeout must be positive")
+		return ExitUsage
+	}
+	if len(specs) == 0 {
+		fmt.Fprintln(a.Stderr, "no targets given")
+		fs.Usage()
+		return ExitUsage
+	}
+	limit := int64(target.DefaultLimit)
+	if *force {
+		limit = 0
+	}
+	targets, _, err := target.Parse(specs, limit)
+	if err != nil {
+		fmt.Fprintln(a.Stderr, "error:", err)
+		return ExitUsage
+	}
+
+	eng := &engine.Engine{
+		Scanner:      nmap.Scanner{Runner: a.NewRunner(*nmapPath), Options: nmap.Options{Ports: *ports, SkipPing: *skipPing}},
+		Checks:       a.Checks(),
+		Workers:      *workers,
+		CheckTimeout: *timeout,
+		OnEvent:      a.progress,
+	}
+	rep, err := eng.Run(ctx, targets)
+	if rep == nil {
+		fmt.Fprintln(a.Stderr, "error:", err)
+		return ExitError
+	}
+	if err != nil {
+		fmt.Fprintln(a.Stderr, "scan stopped early:", err)
+	}
+
+	if *asJSON {
+		err = output.JSON(a.Stdout, rep)
+	} else {
+		err = output.Text(a.Stdout, rep)
+	}
+	if err != nil {
+		fmt.Fprintln(a.Stderr, "error writing report:", err)
+		return ExitError
+	}
+	if ctx.Err() != nil {
+		return ExitError
+	}
+	return ExitOK
+}
+
+// progress prints short status lines to stderr, so stdout stays clean for the report.
+func (a *App) progress(ev engine.Event) {
+	switch ev.Kind {
+	case engine.DiscoveryStarted:
+		fmt.Fprintln(a.Stderr, "Finding hosts and open ports with Nmap...")
+	case engine.DiscoveryDone:
+		fmt.Fprintf(a.Stderr, "Found %d %s.\n", ev.Count, plural(ev.Count, "host", "hosts"))
+	case engine.ChecksStarted:
+		fmt.Fprintf(a.Stderr, "Running %d %s...\n", ev.Count, plural(ev.Count, "check", "checks"))
+	case engine.ScanDone:
+		fmt.Fprintf(a.Stderr, "Done at %s.\n\n", time.Now().Format("15:04:05"))
+	}
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
+}

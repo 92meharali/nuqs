@@ -1,0 +1,37 @@
+# How it works
+
+## The flow
+
+```text
+targets ──► target.Parse ──► Nmap ──► hosts + services ──► checks ──► findings ──► report
+            (validate)       (nmap)                        (engine)               (output)
+```
+
+1. **Validate targets.** We reject anything that isn't an IP, network, range or hostname. This also stops tricks like passing `-oN file` as a target.
+2. **Find hosts with Nmap.** We run `nmap -sT -sV --open` and read its XML. Nmap does all the low-level packet work.
+3. **Pick checks.** Each check says which services it cares about (by port or Nmap service name). We only run a check where it applies.
+4. **Run checks in parallel.** Each check gets its own timeout. If a check errors, hangs or even panics, it's recorded and the scan keeps going.
+5. **Report.** Findings are sorted worst first, with evidence and a fix.
+
+## Packages
+
+| Package | Job |
+|---|---|
+| `cmd/nuqs` | The `nuqs` binary. Only wiring, no logic. |
+| `internal/cli` | Command line parsing and the scan command |
+| `internal/target` | Validates and counts targets |
+| `internal/nmap` | Builds the Nmap command, runs it, parses the XML |
+| `internal/check` | The `Check` interface, which is the main extension point |
+| `internal/engine` | Runs a scan from start to end |
+| `internal/model` | Shared types: Host, Service, Finding, Severity |
+| `internal/output` | Text and JSON reports |
+| `checks/...` | The built-in checks, one folder each |
+
+## Rules we keep
+
+- **Simple first.** If it can be simple, it should be simple.
+- **No hidden magic.** Checks are listed by hand in `checks/checks.go`, there's no auto-registration.
+- **Standard library only** for now, zero dependencies. Less to audit, less to break.
+- **Errors aren't findings.** A check that couldn't connect never reports "vulnerable".
+- **Evidence for everything.** Every finding says what we saw, so people can trust it.
+- **Same input, same output.** Reports are sorted the same way every time.
