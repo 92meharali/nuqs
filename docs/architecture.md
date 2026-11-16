@@ -110,6 +110,7 @@ Every file in the repo, as git sees it. Files CI generates (like the API pages) 
 │   ├── how-it-works.md
 │   ├── index.md
 │   ├── progress.md
+│   ├── requirements.txt
 │   ├── roadmap.md
 │   ├── testing.md
 │   └── writing-a-check.md
@@ -140,6 +141,7 @@ Every file in the repo, as git sees it. Files CI generates (like the API pages) 
 │       ├── target.go
 │       └── target_test.go
 ├── scripts/                      # Small helper scripts used by CI.
+│   ├── docs.sh
 │   └── gen-api-docs.sh
 ├── test/                         # Tests that need real tools, like Nmap.
 │   └── integration/              # Runs the whole scan with the real Nmap binary.

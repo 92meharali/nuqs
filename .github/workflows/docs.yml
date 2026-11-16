@@ -1,10 +1,10 @@
 name: Docs
 
 # Builds the website on every PR (so broken docs fail the PR) and publishes
-# it to GitHub Pages on every push to main.
+# it to GitHub Pages on every push to the default branch (main or master).
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   pull_request:
 
 permissions:
@@ -26,22 +26,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install MkDocs
-        run: pip install "mkdocs>=1.6,<2" "mkdocs-material>=9.5,<10"
-      - name: Generate API pages from code comments
-        run: ./scripts/gen-api-docs.sh
-      - name: Rebuild the architecture page, so the site is right even before the bot commits it
-        run: go run ./tools/archdiagram
-      - name: Build (strict, so warnings like broken links fail)
-        run: mkdocs build --strict
+      - name: Build (same script we use locally, strict so broken links fail)
+        run: ./scripts/docs.sh build
       - uses: actions/upload-pages-artifact@v3
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
         with:
           path: site
 
   deploy:
     name: Publish to GitHub Pages
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
     needs: build
     runs-on: ubuntu-latest
     permissions:

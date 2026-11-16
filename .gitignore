@@ -13,3 +13,6 @@
 .idea/
 .vscode/
 *.swp
+
+# Docs tools installed by scripts/docs.sh
+/.venv/

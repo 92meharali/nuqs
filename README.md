@@ -38,7 +38,7 @@ go test -race ./...                                  # unit tests
 go test -tags integration ./test/integration         # needs nmap
 golangci-lint run                                    # lint, also checks every public thing has a doc comment
 go run ./tools/archdiagram                           # rebuild the architecture page (CI does this on every push)
-./scripts/gen-api-docs.sh && mkdocs serve            # docs website locally
+./scripts/docs.sh                                    # docs website at http://127.0.0.1:8000 (installs what it needs)
 ```
 
 Adding a check? See [Writing a check](docs/writing-a-check.md). Everything else: [Contributing](docs/contributing.md).

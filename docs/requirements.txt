@@ -1,0 +1,4 @@
+# Python packages for building the docs website.
+# scripts/docs.sh installs these into .venv for you.
+mkdocs>=1.6,<2
+mkdocs-material>=9.5,<10
