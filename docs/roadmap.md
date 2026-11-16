@@ -27,11 +27,11 @@ What's already done is in [What's done](progress.md).
 | 8 | W8 | 4 to 10 Jan | Vulnerability data sync, part 2 (KEV, EPSS, CVE list) + **mid-point demo** |
 | 9 | W9 | 11 to 17 Jan | Matching advisories to hosts, and retro-scan |
 | 10 | W10 | 18 to 24 Jan | Fix-first grouping and a signed content feed |
-| 11 | W11 | 25 to 31 Jan | REST API and live progress |
+| 11 | W11 | 25 to 31 Jan | REST API, live progress and MCP server |
 | 12 | W12 | 1 to 7 Feb | Web UI, part 1 (run a scan, watch it, see results) |
-| 13 | W13 | 8 to 14 Feb | Web UI, part 2 (fix-first view, beginner mode) |
+| 13 | W13 | 8 to 14 Feb | Web UI, part 2 (fix-first view, beginner mode, defence model) |
 | 14 | W14 | 15 to 21 Feb | Credential check and SSH logged-in scanning |
-| 15 | W15 | 22 to 28 Feb | Simple YAML checks and the CVE bot |
+| 15 | W15 | 22 to 28 Feb | Simple YAML checks, the CVE bot and the verifier model |
 | 16 | W16 | 1 to 7 Mar | Reports and the benchmark against Nessus |
 | 17 | W17 | 8 to 14 Mar | Freeze: hardening, docs, thesis, demo, v1.0 |
 | | Buffer | 15 to 16 Mar | Final submission |
@@ -169,18 +169,21 @@ What's already done is in [What's done](progress.md).
 
 ## Month 3: API and web UI
 
-### W11 (25 to 31 Jan): REST API and live progress
+### W11 (25 to 31 Jan): REST API, live progress and MCP server
 
-**Goal:** `nuqs serve` so the UI (and other tools) can use Nuqs.
+**Goal:** `nuqs serve` so the UI (and other tools) can use Nuqs, and `nuqs mcp` so AI assistants can too.
 
 - [ ] `nuqs serve` with the standard `net/http` server
 - [ ] Endpoints: start a scan, list scans, get a scan, get findings, get diff, list checks
 - [ ] Live progress with Server-Sent Events, using the engine's existing events
 - [ ] Simple token login, the token is printed on first start
 - [ ] OpenAPI file, checked in CI against the real routes
+- [ ] `internal/tools`: one small set of safe actions (list checks, scan, get findings, get evidence, diff). The API, the MCP server and later the verifier all use these same functions, so they always behave the same.
+- [ ] `nuqs mcp`: an MCP server so assistants like Claude or Cursor can use Nuqs. Uses the official Go MCP SDK, our second dependency, so note why in [Decisions](design/decisions.md).
+- [ ] **Allowed targets** in the config file. An AI can only scan addresses listed there, and scans ask for confirmation. Read-only by default.
 
-**Tests:** every endpoint tested with `httptest`, including bad input and missing token. Live progress tested end to end with a fake scanner.
-**Done when:** a scan can be started and followed with `curl` alone.
+**Tests:** every endpoint tested with `httptest`, including bad input and missing token. Live progress tested end to end with a fake scanner. MCP tested with a test client: every tool works, and scanning outside the allowed targets is always refused.
+**Done when:** a scan can be started and followed with `curl` alone, and Claude Desktop can scan the lab through `nuqs mcp`.
 
 ### W12 (1 to 7 Feb): web UI, part 1
 
@@ -193,17 +196,20 @@ What's already done is in [What's done](progress.md).
 **Tests:** a browser test (Playwright) that starts a scan against the lab and sees the findings appear. Runs in CI.
 **Done when:** a teammate who never saw the UI can run a scan without help.
 
-### W13 (8 to 14 Feb): web UI, part 2
+### W13 (8 to 14 Feb): web UI, part 2, and the defence model
 
-**Goal:** the screens that make people switch from Nessus.
+**Goal:** the screens that make people switch from Nessus, plus exact fix steps for each host.
 
 - [ ] **Fix-first view** as the main results screen
 - [ ] **Changes since last scan** view (new, fixed, still open)
 - [ ] **Beginner mode:** one button, "Scan my network", which finds the local network by itself
 - [ ] Plain-language explanations for each check
+- [ ] **Defence model:** a "How do I fix this?" button. An AI writes the exact fix steps for that host, using the evidence, the detected OS and version, and our fix data (like the exact `apt` command and what to restart).
+- [ ] The AI's answer is clearly marked as AI-written, shown next to our own fix text, and Nuqs never runs it.
+- [ ] Model setup: a local model with Ollama by default, or any OpenAI-compatible endpoint the user sets in the config. Nuqs works fully without any model.
 
-**Tests:** browser tests for each screen, plus a test for the local network detection.
-**Done when:** someone non-technical can scan their home network and understand the top fix.
+**Tests:** browser tests for each screen, plus a test for the local network detection. The defence model is tested with a fake model: the right facts go in, the answer is labelled as AI, and nothing is ever executed. Also a test that everything works with no model set up.
+**Done when:** someone non-technical can scan their home network, understand the top fix, and get exact steps for their machine.
 
 ---
 
@@ -221,17 +227,20 @@ What's already done is in [What's done](progress.md).
 **Tests:** an SSH server in the lab with known old packages, the credential check against good and bad logins, and a test that credentials never appear in any output.
 **Done when:** a logged-in scan of the lab Debian box shows its outdated packages grouped by fix.
 
-### W15 (22 to 28 Feb): simple YAML checks and the CVE bot
+### W15 (22 to 28 Feb): simple YAML checks, the CVE bot and the verifier model
 
-**Goal:** add checks without writing Go, and get new checks suggested automatically.
+**Goal:** add checks without writing Go, get new checks suggested automatically, and let users prove a finding is real with one click.
 
 - [ ] A small YAML check format for the common cases (banner match, HTTP request and response match, version range). Only safe, read-only actions are allowed.
 - [ ] **CVE bot:** a scheduled GitHub Action that watches the CVE list and CISA KEV, filters to things we can detect over the network, and opens a PR with a draft YAML check, its tests and how to verify it
 - [ ] A human always reviews and merges. The bot never merges.
-- [ ] Stretch: let an AI draft the YAML check from the advisory (with a daily cost limit)
+- [ ] **Verifier model:** a "Verify" button on each finding. The AI plans extra checks, using only the safe tools from W11: confirm the version from a second source, read the package list over SSH, read a config value, or run a harmless test of the vulnerable behaviour.
+- [ ] **The AI is never the proof.** A finding only changes from "inferred" to "confirmed" when one of those tools returns hard evidence. If nothing proves it, it stays "inferred" and we say why.
+- [ ] Everything the verifier ran and saw is saved with the finding, so the user can read exactly how it was confirmed.
+- [ ] Limits: only runs when the user clicks, only on that one host and port, read-only, no exploits, a time and step limit, and the same allowed-targets list as MCP.
 
-**Tests:** YAML loader tests (good files, bad files, unsafe actions rejected), and the bot tested on saved CVE samples so it doesn't need the internet in CI.
-**Done when:** the bot opens a real PR for a real recent CVE.
+**Tests:** YAML loader tests (good files, bad files, unsafe actions rejected), and the bot tested on saved CVE samples so it doesn't need the internet in CI. The verifier is tested with a fake model that tries to break the rules: it must not be able to touch another host, run anything outside the safe tools, go past the step limit, or confirm a finding without real evidence.
+**Done when:** the bot opens a real PR for a real recent CVE, and verifying the lab's old OpenSSH turns it into "confirmed" with the proof shown.
 
 ### W16 (1 to 7 Mar): reports and the benchmark against Nessus
 
@@ -239,6 +248,7 @@ What's already done is in [What's done](progress.md).
 
 - [ ] HTML report (fix-first, with evidence) and SARIF output for CI tools
 - [ ] **Benchmark:** scan the same lab with Nessus Essentials and Nuqs. Compare time, findings, false positives and missed findings. Save the raw results.
+- [ ] Measure the verifier: false positives before and after verifying, and how long a verify takes. These real numbers go in the thesis.
 - [ ] Fix the slowest parts found by the benchmark
 
 **Tests:** report output tests (HTML is valid, SARIF matches its schema).
@@ -271,4 +281,5 @@ Things we know we want but won't fit in 4 months:
 - More scan workers on other machines (distributed scanning)
 - Importing Nuclei templates and Nmap NSE scripts as checks
 - A Windows build
+- Letting an AI draft the CVE bot's checks (moved out of W15 to make room for the verifier)
 - Scheduled scans and email or webhook alerts

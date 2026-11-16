@@ -38,6 +38,19 @@ The core has zero dependencies. Every dependency is code we have to trust and ke
 
 If a check can't connect or times out, it reports an error, never "vulnerable". False positives destroy trust, and trust is how we beat Nessus.
 
+## AI helps, it never decides
+
+Nuqs has two optional AI helpers, and it works fully without either.
+
+- **Defence model:** writes exact fix steps for a host. It only suggests, Nuqs never runs what it writes, and its answer is always marked as AI-written.
+- **Verifier model:** when the user clicks "Verify", it plans extra checks to prove a finding is real. But the AI's opinion is never the proof. A finding only becomes "confirmed" when one of our safe, read-only tools returns hard evidence, and everything it did is saved so the user can read it.
+
+Both use a local model (Ollama) by default, so scan data doesn't leave the machine. Users can point them at any OpenAI-compatible endpoint instead.
+
+## One set of tools for the API, MCP and the verifier
+
+The REST API, the MCP server (`nuqs mcp`) and the verifier all use the same small set of safe actions in `internal/tools`. We write and test each action once, and all three behave the same. AI assistants can only scan addresses on the allowed-targets list, and scans ask for confirmation. MCP uses the official Go MCP SDK, which will be our second dependency.
+
 ## Docs from code comments
 
 We asked for Doxygen at first, but Doxygen doesn't support Go. Go has its own standard for doc comments, which we use instead. CI turns them into the API pages of the website, and the linter fails the build if any public function, type or package is missing one.
