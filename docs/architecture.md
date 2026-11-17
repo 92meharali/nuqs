@@ -135,6 +135,7 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders.
 │       └── render.go                   # Turns what we read into the architecture page: diagram, table and file tree.
 ├── .gitignore                          # Files git should ignore, like build output and generated docs.
 ├── .golangci.yml                       # Lint settings.
+├── LICENSE
 ├── README.md                           # The front page of the repo: what Nuqs is and how to start.
 ├── go.mod                              # The Go module for Nuqs.
 └── mkdocs.yml                          # Settings for the docs website (MkDocs Material).
