@@ -1,11 +1,11 @@
 # Nuqs
 
-[![CI](https://github.com/PremadeS/nuqs/actions/workflows/ci.yml/badge.svg)](https://github.com/PremadeS/nuqs/actions/workflows/ci.yml)
-[![Docs](https://github.com/PremadeS/nuqs/actions/workflows/docs.yml/badge.svg)](https://premades.github.io/nuqs/)
+[![CI](https://github.com/nuqs-org/nuqs/actions/workflows/ci.yml/badge.svg)](https://github.com/nuqs-org/nuqs/actions/workflows/ci.yml)
+[![Docs](https://github.com/nuqs-org/nuqs/actions/workflows/docs.yml/badge.svg)](https://nuqs-org.github.io/nuqs/)
 
 A simple, open-source network vulnerability scanner built on Nmap. Our final year project, aiming to be a simpler and more trustworthy alternative to Nessus.
 
-**Docs:** https://premades.github.io/nuqs/
+**Docs:** https://nuqs-org.github.io/nuqs/
 
 ## Quick start
 
