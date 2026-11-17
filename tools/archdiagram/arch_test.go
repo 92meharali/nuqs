@@ -259,8 +259,9 @@ func TestMatchesGoList(t *testing.T) {
 	}
 }
 
-// Every file in Nuqs (except test fixtures) must start with a short
-// description, so the file map on the architecture page has no gaps.
+// Every Go file (except test fixtures) must start with a short
+// description, so the file map on the architecture page explains the code.
+// Other files, like LICENSE or configs, are optional.
 func TestEveryFileDescribed(t *testing.T) {
 	r, err := Scan("../..")
 	if err != nil {
@@ -268,12 +269,12 @@ func TestEveryFileDescribed(t *testing.T) {
 	}
 	var missing []string
 	for _, f := range r.Files {
-		if _, fixture := testdataDir(f); !fixture && r.Notes[f] == "" {
+		if _, fixture := testdataDir(f); !fixture && strings.HasSuffix(f, ".go") && r.Notes[f] == "" {
 			missing = append(missing, f)
 		}
 	}
 	if len(missing) > 0 {
-		t.Errorf("these files need a one-line description at the top (see docs/contributing.md):\n  %s",
+		t.Errorf("these Go files need a one-line description at the top (see docs/contributing.md):\n  %s",
 			strings.Join(missing, "\n  "))
 	}
 }

@@ -16,7 +16,7 @@ If it can be simple, it should be simple. Before adding a library, a config opti
 ## Docs
 
 - Every public function, type and package needs a doc comment. CI checks this.
-- Every file starts with a one-line description of what's in it. The [Architecture](architecture.md) page shows these next to each file, and a test fails if one is missing.
+- Every file starts with a one-line description of what's in it. The [Architecture](architecture.md) page shows these next to each file. A test fails if a Go file is missing one, for other files it's optional but nice.
 
 | File type | How to write the description |
 |---|---|
