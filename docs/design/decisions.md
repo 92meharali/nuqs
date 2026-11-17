@@ -28,7 +28,7 @@ The CLI, the API and the web UI never contain scan logic. They only call the eng
 
 ## Standard library only (for now)
 
-The core has zero dependencies. Every dependency is code we have to trust and keep updated. We'll add one only when it saves real work, like SQLite in week 4, and we'll write the reason down here when we do.
+The core has zero dependencies. Every dependency is code we have to trust and keep updated. We'll add one only when it saves real work, like SQLite in week 2, and we'll write the reason down here when we do.
 
 ## Checks are listed by hand
 
@@ -57,4 +57,8 @@ We asked for Doxygen at first, but Doxygen doesn't support Go. Go has its own st
 
 ## Website on GitHub Pages
 
-Free, runs from our repo, and updates on every push to `main`. The address is `premades.github.io/nuqs`. We can move to a custom domain later without changing anything else.
+Free, runs from our repo, and updates on every push to the default branch. The address is `nuqs-org.github.io/nuqs`. We can move to a custom domain later without changing anything else.
+
+## Web UI, not a desktop app
+
+The UI is a web page served by the `nuqs` binary. It works on every OS, from any machine on the network, and on a server with no screen. A Qt app would be a second UI in C++ to build and test, for no real gain. If people want a desktop app later, we wrap the same web UI with Wails, so there's still only one UI.

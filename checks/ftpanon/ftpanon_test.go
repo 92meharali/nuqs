@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PremadeS/nuqs/internal/check"
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 // fakeFTP is a tiny scripted FTP server. greeting is sent on connect, then

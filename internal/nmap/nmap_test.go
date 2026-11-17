@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 func TestArgs(t *testing.T) {

@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 // Options controls how Nmap is run.

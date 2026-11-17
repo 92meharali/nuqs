@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/PremadeS/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/internal/check"
 )
 
 // Every built-in check must be valid (unique ID, title, fix and so on).

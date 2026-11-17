@@ -1,6 +1,6 @@
 # What's done
 
-Last updated 16 Nov 2026.
+Last updated 17 Nov 2026.
 
 ## Research: how Nessus works
 
@@ -21,7 +21,9 @@ All of this lives in the [nessus-dissection](https://github.com/PremadeS/nessus-
 - [x] One core with the CLI now, and the API and web UI later as thin layers on top
 - [x] Nmap does the low-level scanning, we don't reinvent it
 - [x] Plan for keeping up with new CVEs (see [Keeping up with new CVEs](design/content-pipeline.md))
-- [x] 4-month [roadmap](roadmap.md)
+- [x] 4-month [roadmap](roadmap.md), tightened so each week does a lot more
+- [x] Web UI served by the binary, no Qt desktop app (see [Decisions](design/decisions.md))
+- [x] Repo moved to [nuqs-org/nuqs](https://github.com/nuqs-org/nuqs), with all commits kept
 
 ## Nuqs core (milestone 0)
 
@@ -36,8 +38,11 @@ All of this lives in the [nessus-dissection](https://github.com/PremadeS/nessus-
 - [x] CI: format, vet, lint (including "everything public is documented"), race detector, coverage gate, fuzzing, integration, govulncheck, build
 - [x] Docs website built and published from CI, with API pages generated from code comments
 - [x] Architecture page (diagram, package table and file map) generated from the code and updated by CI on every push, with a test that checks it against `go list`
+- [x] Every file starts with a one-line description, the file map on the architecture page is built from them, and a test fails if one is missing
+- [x] Nicer API pages: one heading per item, the description first, and a link to the code
+- [x] `scripts/docs.sh` installs what the docs need and builds or serves them in one command
 - [x] Zero dependencies, standard library only
 
 ## Next
 
-Week 1 of the [roadmap](roadmap.md): push the repo, turn on GitHub Pages, protect `main`, pick a license.
+Week 1 of the [roadmap](roadmap.md): turn on GitHub Pages, protect the default branch, pick a license, build the test lab, add version comparison and the first 5 new checks.

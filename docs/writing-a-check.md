@@ -15,8 +15,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/PremadeS/nuqs/internal/check"
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 // Check reports Redis servers with no password.

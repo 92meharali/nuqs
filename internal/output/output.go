@@ -9,7 +9,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/PremadeS/nuqs/internal/engine"
+	"github.com/nuqs-org/nuqs/internal/engine"
 )
 
 // JSON writes the full report as indented JSON.

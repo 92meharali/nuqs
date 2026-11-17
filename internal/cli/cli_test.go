@@ -12,10 +12,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PremadeS/nuqs/checks/telnet"
-	"github.com/PremadeS/nuqs/internal/check"
-	"github.com/PremadeS/nuqs/internal/engine"
-	"github.com/PremadeS/nuqs/internal/nmap"
+	"github.com/nuqs-org/nuqs/checks/telnet"
+	"github.com/nuqs-org/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/internal/engine"
+	"github.com/nuqs-org/nuqs/internal/nmap"
 )
 
 // fakeRunner returns canned Nmap XML and remembers what it was asked.

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 type stub struct{ info Info }

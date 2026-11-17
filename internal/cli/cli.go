@@ -12,11 +12,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/PremadeS/nuqs/internal/check"
-	"github.com/PremadeS/nuqs/internal/engine"
-	"github.com/PremadeS/nuqs/internal/nmap"
-	"github.com/PremadeS/nuqs/internal/output"
-	"github.com/PremadeS/nuqs/internal/target"
+	"github.com/nuqs-org/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/internal/engine"
+	"github.com/nuqs-org/nuqs/internal/nmap"
+	"github.com/nuqs-org/nuqs/internal/output"
+	"github.com/nuqs-org/nuqs/internal/target"
 )
 
 // Exit codes returned by Run.

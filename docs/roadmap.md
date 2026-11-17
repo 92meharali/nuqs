@@ -1,13 +1,16 @@
+<!-- The 4-month plan, week by week, with what "done" means for each week. -->
+
 # Roadmap (16 Nov 2026 to 16 Mar 2027)
 
-Four months, 17 weeks, one clear goal per week. Each week builds on the one before, so we do them in order.
+Four months, 17 weeks. Each week is packed on purpose, we'd rather cut a stretch item than finish early.
 
 Every week follows the same rules:
 
 - Each task ships with its **tests** and **doc comments** in the same PR. No "tests later".
-- CI must be green on `main` at the end of every week.
+- **New checks every week** (see the quota below), each with fake-server tests and a lab test.
+- CI must be green on the default branch at the end of every week.
 - Friday: a 10 minute demo to each other of what works now.
-- If a week slips, we cut scope inside the week, we don't push the whole plan back.
+- If a week slips, we cut the stretch items of that week first, we don't push the whole plan back.
 
 What's already done is in [What's done](progress.md).
 
@@ -15,257 +18,293 @@ What's already done is in [What's done](progress.md).
 
 ## The order, at a glance
 
-| # | Week | Dates | What we build |
-|---|---|---|---|
-| 1 | W1 | 16 to 22 Nov | Team setup, repo, CI and website live |
-| 2 | W2 | 23 to 29 Nov | Test lab and two more checks |
-| 3 | W3 | 30 Nov to 6 Dec | Version comparison and the first version-based check |
-| 4 | W4 | 7 to 13 Dec | Saving scans (SQLite) and scan history |
-| 5 | W5 | 14 to 20 Dec | Comparing scans (new, fixed, still open) |
-| 6 | W6 | 21 to 27 Dec | Host inventory (light week, holidays) |
-| 7 | W7 | 28 Dec to 3 Jan | Vulnerability data sync, part 1 (OSV) |
-| 8 | W8 | 4 to 10 Jan | Vulnerability data sync, part 2 (KEV, EPSS, CVE list) + **mid-point demo** |
-| 9 | W9 | 11 to 17 Jan | Matching advisories to hosts, and retro-scan |
-| 10 | W10 | 18 to 24 Jan | Fix-first grouping and a signed content feed |
-| 11 | W11 | 25 to 31 Jan | REST API, live progress and MCP server |
-| 12 | W12 | 1 to 7 Feb | Web UI, part 1 (run a scan, watch it, see results) |
-| 13 | W13 | 8 to 14 Feb | Web UI, part 2 (fix-first view, beginner mode, defence model) |
-| 14 | W14 | 15 to 21 Feb | Credential check and SSH logged-in scanning |
-| 15 | W15 | 22 to 28 Feb | Simple YAML checks, the CVE bot and the verifier model |
-| 16 | W16 | 1 to 7 Mar | Reports and the benchmark against Nessus |
-| 17 | W17 | 8 to 14 Mar | Freeze: hardening, docs, thesis, demo, v1.0 |
-| | Buffer | 15 to 16 Mar | Final submission |
+| Week | Dates | What we build |
+|---|---|---|
+| W1 | 16 to 22 Nov | Setup, test lab, version comparison, 5 checks |
+| W2 | 23 to 29 Nov | Saving scans, history, diffs, CI exit codes |
+| W3 | 30 Nov to 6 Dec | Host inventory and all vulnerability data feeds |
+| W4 | 7 to 13 Dec | Advisory matching, retro-scan, fix-first, signed feed |
+| W5 | 14 to 20 Dec | REST API, live progress, shared tools layer, MCP server |
+| W6 | 21 to 27 Dec | The whole web UI |
+| W7 | 28 Dec to 3 Jan | SSH logged-in scanning and the credential check |
+| W8 | 4 to 10 Jan | YAML checks, CVE bot, Nuclei import, **mid-point demo** |
+| W9 | 11 to 17 Jan | Defence model and verifier model |
+| W10 | 18 to 24 Jan | Reports, scheduled scans and alerts |
+| W11 | 25 to 31 Jan | Windows logged-in scanning and Windows checks |
+| W12 | 1 to 7 Feb | Distributed scan workers and multiple users |
+| W13 | 8 to 14 Feb | Speed: big networks, smart scheduling, benchmark against Nessus |
+| W14 | 15 to 21 Feb | Packaging: releases, Docker, Homebrew, installer |
+| W15 | 22 to 28 Feb | Security review of Nuqs itself |
+| W16 | 1 to 7 Mar | Real users, fixes from their feedback, thesis results |
+| W17 | 8 to 14 Mar | Freeze, v1.0, demo |
+| Buffer | 15 to 16 Mar | Final submission |
+
+## Checks quota
+
+At least **5 new checks every week** from W1 to W14, so we end with **70+ built-in checks**, plus everything from advisory data (W4), Nuclei templates (W8) and the CVE bot (W8). Ideas, roughly in order:
+
+| Area | Checks |
+|---|---|
+| Remote access | SSH password login, SSH weak algorithms, SSH old version, Telnet, RDP without NLA, VNC without password |
+| Databases | Redis, MongoDB, Elasticsearch, Memcached, CouchDB with no login, MySQL and Postgres default logins |
+| Web | missing headers, directory listing, default pages, exposed `.git`, exposed `.env`, admin panels, old TLS, weak ciphers, expired or self-signed certificates |
+| Network services | anonymous FTP, open DNS resolver, SNMP with "public", NTP monlist, SMB signing off, SMBv1 on, open NFS shares |
+| Containers and cloud | Docker API exposed, Kubernetes API anonymous, etcd open, cloud metadata reachable |
+| Devices | UPnP exposed, default router logins (safe list only), printers with open admin |
 
 ---
 
-## Month 1: a solid base
+## Month 1: a solid base and knowing about vulnerabilities
 
-### W1 (16 to 22 Nov): team setup, CI and website live
+### W1 (16 to 22 Nov): setup, test lab, version comparison, 5 checks
 
-**Goal:** everyone can build, test and ship to `main`.
+**Goal:** everyone ships code, and we can test against real vulnerable software.
 
-- [ ] Push this repo to `github.com/PremadeS/nuqs`
-- [ ] Turn on GitHub Pages (Settings, Pages, Source: GitHub Actions) so the website goes live at `premades.github.io/nuqs`
-- [ ] Protect `main`: PRs only, one review, CI must pass
-- [ ] Pick a license (we suggest Apache 2.0) and add `LICENSE`
-- [ ] Every teammate: install Go and Nmap, build Nuqs, run a scan of their own router, read [How it works](how-it-works.md)
-- [ ] Each teammate opens one tiny PR (a doc fix is fine) to learn the flow
+- [ ] Repo on `nuqs-org/nuqs`, GitHub Pages on (Settings, Pages, Source: GitHub Actions), default branch protected, license added (Apache 2.0 suggested)
+- [ ] Every teammate builds Nuqs, scans their own router, and merges one PR
 - [ ] Split ownership: engine and checks, data and storage, API and UI
+- [ ] **Test lab:** `lab/docker-compose.yml` with real services: vsftpd with anonymous login, a Telnet server, nginx without headers, an old OpenSSH, a TLS 1.0 server, Redis and MongoDB with no login
+- [ ] Lab CI job: scan the lab, the result must match a saved expected report exactly
+- [ ] `internal/version`: compare versions like each ecosystem does (semver, Debian, RPM, OpenSSH style `9.6p1`)
+- [ ] `confidence` on every finding: `confirmed` (we proved it) or `inferred` (from the version)
+- [ ] 5 checks: `tls-deprecated-protocols`, `ssh-password-auth`, `ssh-weak-algorithms`, `redis-no-auth`, `mongodb-no-auth`
 
-**Tests:** CI runs on every PR (unit, race, lint, fuzz, integration, docs).
-**Done when:** the website is live, CI is green, and everyone has merged one PR.
+**Tests:** fake-server tests for each check, lab test for each check, big table tests and a fuzz test for version comparison (it must be consistent: if a < b then b > a).
+**Done when:** the lab scan finds exactly the expected problems in CI, and everyone has merged a PR.
 
-### W2 (23 to 29 Nov): test lab and two more checks
+### W2 (23 to 29 Nov): saving scans, history, diffs, CI exit codes
 
-**Goal:** a repeatable lab of vulnerable targets, so every check is tested against real software.
+**Goal:** scans are saved and every scan shows what changed.
 
-- [ ] `lab/docker-compose.yml` with real services: vsftpd with anonymous login, a Telnet server, nginx without security headers, an old OpenSSH, a TLS server allowing TLS 1.0
-- [ ] `make lab-up` and `make lab-down` (or a short script)
-- [ ] New CI job that starts the lab and scans it, and the result must match a saved expected report
-- [ ] Check `tls-deprecated-protocols`: server accepts TLS 1.0 or 1.1
-- [ ] Check `ssh-password-auth`: SSH server accepts password logins
+- [ ] SQLite with `modernc.org/sqlite` (pure Go, our first dependency, reason written in [Decisions](design/decisions.md))
+- [ ] `internal/store`: scan runs, hosts, services, findings, check errors, simple numbered migrations
+- [ ] Every scan is saved (`--no-save` to skip), `nuqs history`, `nuqs show <run>`
+- [ ] Compare runs with stable finding IDs: **new**, **fixed**, **still open**, plus `first_seen` and `last_seen`
+- [ ] `nuqs diff <old> <new>`, and a short "since last scan" summary after every scan
+- [ ] `--fail-on high` exits with code 3 when there's a finding at or above that level
+- [ ] Retention setting: keep the last N runs per target
+- [ ] 5 checks: `openssh-vulnerable-version`, `elasticsearch-no-auth`, `memcached-exposed`, `http-directory-listing`, `tls-certificate-problems` (expired, self-signed, wrong name)
 
-**Tests:** each new check has fake-server unit tests plus a lab test. The lab scan's expected findings are saved in the repo, any difference fails CI.
-**Done when:** `nuqs scan` on the lab finds exactly the 5 expected problems, in CI.
-
-### W3 (30 Nov to 6 Dec): version comparison and the first version-based check
-
-**Goal:** be able to say "this version is older than the fixed one" correctly. This is the base of everything in month 2.
-
-- [ ] `internal/version` package: compare versions the way each ecosystem does (plain semver, Debian like `1:2.3-4ubuntu1`, RPM, and OpenSSH style `9.6p1`)
-- [ ] Check `openssh-vulnerable-version`: compares the OpenSSH version Nmap found against a small hard-coded list of known bad ranges
-- [ ] Add a `confidence` field to findings: `confirmed` (we proved it) or `inferred` (based on version only)
-
-**Tests:** big table tests for version comparison taken from real Debian and RPM rules, plus a fuzz test (comparison must never crash and must be consistent: if a < b then b > a).
-**Done when:** the OpenSSH check correctly flags the old OpenSSH in the lab and is marked `inferred`.
-
-### W4 (7 to 13 Dec): saving scans and scan history
-
-**Goal:** scans are saved, so we can look back and compare later.
-
-- [ ] Add SQLite (`modernc.org/sqlite`, pure Go, so no C compiler needed). This is our first dependency, so note why in [Decisions](design/decisions.md).
-- [ ] `internal/store` with tables for scan runs, hosts, services, findings and check errors
-- [ ] Simple numbered migrations that run on startup
-- [ ] `nuqs scan` saves every run (with `--no-save` to skip)
-- [ ] `nuqs history` lists past runs, `nuqs show <run>` prints one
-
-**Tests:** store tests run on a temporary database, migrations are tested from empty and from every older version, and the saved and loaded report must be identical.
-**Done when:** you can scan, close everything, and see the same report again with `nuqs show`.
-
----
-
-## Month 2: knowing about new vulnerabilities
-
-### W5 (14 to 20 Dec): comparing scans
-
-**Goal:** every scan shows what changed since the last one.
-
-- [ ] Use the stable finding IDs to compare two runs: **new**, **fixed**, **still open**
-- [ ] Each finding keeps `first_seen` and `last_seen`
-- [ ] `nuqs diff <old> <new>`, and the normal scan output shows a short "since last scan" summary
-- [ ] `--fail-on high` makes `nuqs scan` exit with code 3 if there's a finding at or above that severity (for CI use)
-
-**Tests:** diff cases (nothing changed, all fixed, all new, mixed, host disappeared), exit code tests.
+**Tests:** store tests on a temp database, migrations from empty and from every older version, save and load must give the same report, diff cases (no change, all fixed, all new, mixed, host gone), exit code tests.
 **Done when:** fixing a problem in the lab and scanning again shows it as "fixed".
 
-### W6 (21 to 27 Dec): host inventory (light week)
+### W3 (30 Nov to 6 Dec): host inventory and all vulnerability data feeds
 
-**Goal:** turn what Nmap tells us into a clean product list we can match against vulnerability data.
+**Goal:** a clean list of what runs where, and a local copy of all the vulnerability data we need.
 
-- [ ] Read the CPE values Nmap already gives (`cpe:/a:openbsd:openssh:9.6p1`)
-- [ ] A small, hand-written **product mapping table** (YAML file) that maps Nmap's names to the names used in vulnerability databases
-- [ ] Save the inventory with each scan
+- [ ] Inventory from Nmap's CPEs and versions, saved with each scan
+- [ ] **Product mapping table** (YAML) from Nmap names to the names used in vulnerability data
+- [ ] `nuqs update` downloads and stores: **OSV** (Debian, Ubuntu, Alpine, Red Hat and more), **CISA KEV**, **EPSS**, and the official **CVE list** (cvelistV5)
+- [ ] Only download what changed, keep the last good copy if a download fails or is corrupt
+- [ ] `nuqs update --status` shows how fresh each source is
+- [ ] 5 checks: `dns-open-resolver`, `snmp-default-community`, `ntp-monlist`, `http-exposed-git`, `http-exposed-env`
 
-**Tests:** mapping tests using real Nmap XML saved from the lab and from our router scans.
-**Done when:** every service in the lab has the right product and version in the inventory.
+**Tests:** mapping tests on real Nmap XML from the lab, import tests for every feed on small saved samples (no network in tests), a corrupt download must never damage the existing data.
+**Done when:** every lab service has the right product and version, and `nuqs update` works both online and from saved files.
 
-### W7 (28 Dec to 3 Jan): vulnerability data sync, part 1 (OSV)
+### W4 (7 to 13 Dec): advisory matching, retro-scan, fix-first, signed feed
 
-**Goal:** a local copy of open vulnerability data that updates itself.
+**Goal:** our headline features work end to end.
 
-- [ ] `nuqs update` downloads OSV data for the ecosystems we support first (Debian, Ubuntu, Alpine, and the packages behind common network services)
-- [ ] Store it in a separate local database, with the time of the last update
-- [ ] Only download what changed when possible
+- [ ] Match inventory against advisory data with `internal/version`, findings marked `inferred` with a link to the advisory
+- [ ] **Retro-scan:** `nuqs rematch` re-checks saved inventories with no network scan, and `nuqs update` runs it automatically. Findings show "affected since <time>".
+- [ ] **Fix-first:** group findings by fix, like "Upgrade OpenSSH to 9.8, fixes 6 findings on 3 hosts", in the text and JSON output (`--by-fix`)
+- [ ] Rank findings by real risk: KEV first, then EPSS, then severity
+- [ ] **Signed content feed** built by CI (checks data, mapping table, advisory snapshot), checked by `nuqs update` before use
+- [ ] 5 checks: `docker-api-exposed`, `kubernetes-api-anonymous`, `etcd-exposed`, `couchdb-no-auth`, `vnc-no-auth`
 
-**Tests:** import tests on small saved OSV files (no network in tests), a corrupt download must not damage the existing data.
-**Done when:** `nuqs update` works offline from a saved file and online from OSV.
-
-### W8 (4 to 10 Jan): vulnerability data sync, part 2, and the mid-point demo
-
-**Goal:** add the data that tells us what's actually dangerous.
-
-- [ ] CISA KEV (known exploited) and EPSS (chance of being exploited) feeds
-- [ ] The official CVE list (CVEProject/cvelistV5) for vendor-supplied affected versions
-- [ ] **Mid-point demo** to supervisors: scan the lab, save, fix something, rescan, show the diff, show `nuqs update`
-
-**Tests:** import tests for each feed using saved samples.
-**Done when:** the demo runs end to end without touching anything by hand.
-
-### W9 (11 to 17 Jan): matching advisories to hosts, and retro-scan
-
-**Goal:** our headline feature. New vulnerabilities are matched against saved inventories, with no rescan.
-
-- [ ] Match inventory products and versions against the advisory data (using `internal/version`)
-- [ ] Findings from advisories are marked `inferred` and link to the advisory
-- [ ] `nuqs rematch` re-checks every saved inventory against the latest data, and `nuqs update` runs it automatically
-- [ ] Show "affected since <time>" for findings found this way
-
-**Tests:** matching tests with hand-made advisories (in range, out of range, fixed exactly at the version, distro backports), plus a test that rematch finds a "new" advisory without any network scan.
-**Done when:** adding a fake advisory for the lab's OpenSSH and running `nuqs update` flags it within seconds.
-
-### W10 (18 to 24 Jan): fix-first grouping and a signed content feed
-
-**Goal:** show people what to do, not just what's wrong, and ship checks and data safely.
-
-- [ ] Group findings by fix, like "Upgrade OpenSSH to 9.8, fixes 6 findings on 3 hosts"
-- [ ] `nuqs scan --by-fix` and the same grouping in JSON
-- [ ] A content feed (checks data, mapping table, advisory snapshot) built and **signed** by CI, separate from the binary
-- [ ] `nuqs update` checks the signature before using anything
-
-**Tests:** grouping tests, signature tests (a changed byte must be rejected, a wrong key must be rejected).
-**Done when:** CI publishes a signed feed and a tampered feed is refused.
+**Tests:** matching cases (in range, out of range, fixed exactly at the version, distro backports), a rematch test that finds a new advisory with no network, grouping tests, signature tests (one changed byte or a wrong key must be refused).
+**Done when:** adding a fake advisory for the lab's OpenSSH and running `nuqs update` flags it within seconds, grouped under its fix.
 
 ---
 
-## Month 3: API and web UI
+## Month 2: API, UI, logged-in scanning and AI
 
-### W11 (25 to 31 Jan): REST API, live progress and MCP server
+### W5 (14 to 20 Dec): REST API, live progress, shared tools, MCP server
 
-**Goal:** `nuqs serve` so the UI (and other tools) can use Nuqs, and `nuqs mcp` so AI assistants can too.
+**Goal:** everything the CLI does is available to the UI, other tools and AI assistants.
 
-- [ ] `nuqs serve` with the standard `net/http` server
-- [ ] Endpoints: start a scan, list scans, get a scan, get findings, get diff, list checks
-- [ ] Live progress with Server-Sent Events, using the engine's existing events
-- [ ] Simple token login, the token is printed on first start
+- [ ] `internal/tools`: one set of safe actions (list checks, scan, get findings, get evidence, diff, update). API, MCP and the verifier all use these.
+- [ ] `nuqs serve` with `net/http`: scans, findings, diff, history, checks, update status
+- [ ] Live progress with Server-Sent Events from the engine's events
+- [ ] Token login, the token is printed on first start
 - [ ] OpenAPI file, checked in CI against the real routes
-- [ ] `internal/tools`: one small set of safe actions (list checks, scan, get findings, get evidence, diff). The API, the MCP server and later the verifier all use these same functions, so they always behave the same.
-- [ ] `nuqs mcp`: an MCP server so assistants like Claude or Cursor can use Nuqs. Uses the official Go MCP SDK, our second dependency, so note why in [Decisions](design/decisions.md).
-- [ ] **Allowed targets** in the config file. An AI can only scan addresses listed there, and scans ask for confirmation. Read-only by default.
+- [ ] `nuqs mcp`: MCP server with the official Go MCP SDK (second dependency, reason written down)
+- [ ] **Allowed targets** in the config. AI scans outside it are always refused, and scans ask for confirmation.
+- [ ] 5 checks: `rdp-no-nla`, `smb-signing-disabled`, `smbv1-enabled`, `nfs-open-shares`, `upnp-exposed`
 
-**Tests:** every endpoint tested with `httptest`, including bad input and missing token. Live progress tested end to end with a fake scanner. MCP tested with a test client: every tool works, and scanning outside the allowed targets is always refused.
-**Done when:** a scan can be started and followed with `curl` alone, and Claude Desktop can scan the lab through `nuqs mcp`.
+**Tests:** every endpoint with `httptest` (good input, bad input, no token), live progress end to end with a fake scanner, MCP tested with a test client including "scanning outside the allowed targets is always refused".
+**Done when:** a scan can be run and followed with `curl` alone, and Claude Desktop can scan the lab through `nuqs mcp`.
 
-### W12 (1 to 7 Feb): web UI, part 1
+### W6 (21 to 27 Dec): the whole web UI
 
-**Goal:** run a scan from the browser and watch it.
+**Goal:** everything important can be done from the browser.
 
-- [ ] Pick the UI approach on Monday. We suggest plain HTML with htmx served by the Go binary (one binary, nothing to install), unless the UI owner prefers Svelte.
-- [ ] Pages: new scan, live scan (progress from the API), results list, finding detail with evidence and fix
-- [ ] The UI is embedded in the `nuqs` binary
+- [ ] Plain HTML with htmx, embedded in the `nuqs` binary (one binary, nothing to install)
+- [ ] Pages: new scan, live scan, results, finding detail (evidence, confidence, fix), history, diff
+- [ ] **Fix-first view** as the main results screen, and a **"since last scan"** view
+- [ ] **Beginner mode:** one "Scan my network" button that finds the local network by itself
+- [ ] Plain-language explanation for every check, and a dark mode
+- [ ] 5 checks: `http-default-pages`, `http-admin-panels`, `tls-weak-ciphers`, `mysql-default-login`, `postgres-default-login`
 
-**Tests:** a browser test (Playwright) that starts a scan against the lab and sees the findings appear. Runs in CI.
-**Done when:** a teammate who never saw the UI can run a scan without help.
+**Tests:** Playwright browser tests in CI: start a scan against the lab, watch it live, see findings, open a finding, compare two scans. Plus a test for local network detection.
+**Done when:** a teammate who never saw the UI scans the lab and finds the top fix without help.
 
-### W13 (8 to 14 Feb): web UI, part 2, and the defence model
-
-**Goal:** the screens that make people switch from Nessus, plus exact fix steps for each host.
-
-- [ ] **Fix-first view** as the main results screen
-- [ ] **Changes since last scan** view (new, fixed, still open)
-- [ ] **Beginner mode:** one button, "Scan my network", which finds the local network by itself
-- [ ] Plain-language explanations for each check
-- [ ] **Defence model:** a "How do I fix this?" button. An AI writes the exact fix steps for that host, using the evidence, the detected OS and version, and our fix data (like the exact `apt` command and what to restart).
-- [ ] The AI's answer is clearly marked as AI-written, shown next to our own fix text, and Nuqs never runs it.
-- [ ] Model setup: a local model with Ollama by default, or any OpenAI-compatible endpoint the user sets in the config. Nuqs works fully without any model.
-
-**Tests:** browser tests for each screen, plus a test for the local network detection. The defence model is tested with a fake model: the right facts go in, the answer is labelled as AI, and nothing is ever executed. Also a test that everything works with no model set up.
-**Done when:** someone non-technical can scan their home network, understand the top fix, and get exact steps for their machine.
-
----
-
-## Month 4: depth, automation and finishing
-
-### W14 (15 to 21 Feb): credential check and SSH logged-in scanning
+### W7 (28 Dec to 3 Jan): SSH logged-in scanning and the credential check
 
 **Goal:** see installed packages, which is where most real findings come from.
 
-- [ ] **Credential check:** test SSH logins before a scan and say exactly what's wrong (wrong key, needs sudo, locked out)
-- [ ] With working SSH credentials, collect the installed package list (dpkg, rpm, apk) into the inventory
-- [ ] Advisory matching (from W9) now works on installed packages too
-- [ ] Credentials are never written to logs or reports
+- [ ] **Credential check:** test SSH logins before scanning and say exactly what's wrong (wrong key, needs sudo, locked out, host unreachable)
+- [ ] With SSH, collect installed packages (dpkg, rpm, apk) and the OS version into the inventory
+- [ ] Advisory matching now covers installed packages, with distro backports handled
+- [ ] Credentials stored encrypted, never in logs, reports or API responses
+- [ ] Credential setup in the UI with a "Test" button
+- [ ] 5 checks (logged in): `ssh-root-login-allowed`, `linux-unattended-upgrades-off`, `linux-world-writable-files`, `linux-firewall-off`, `sudo-nopasswd-all`
 
-**Tests:** an SSH server in the lab with known old packages, the credential check against good and bad logins, and a test that credentials never appear in any output.
+**Tests:** SSH server in the lab with known old packages, credential check against good and bad logins, a test that searches every output (logs, JSON, API, UI) and fails if a secret appears anywhere.
 **Done when:** a logged-in scan of the lab Debian box shows its outdated packages grouped by fix.
 
-### W15 (22 to 28 Feb): simple YAML checks, the CVE bot and the verifier model
+### W8 (4 to 10 Jan): YAML checks, CVE bot, Nuclei import, mid-point demo
 
-**Goal:** add checks without writing Go, get new checks suggested automatically, and let users prove a finding is real with one click.
+**Goal:** checks without Go code, new checks suggested automatically, and a strong demo.
 
-- [ ] A small YAML check format for the common cases (banner match, HTTP request and response match, version range). Only safe, read-only actions are allowed.
-- [ ] **CVE bot:** a scheduled GitHub Action that watches the CVE list and CISA KEV, filters to things we can detect over the network, and opens a PR with a draft YAML check, its tests and how to verify it
-- [ ] A human always reviews and merges. The bot never merges.
-- [ ] **Verifier model:** a "Verify" button on each finding. The AI plans extra checks, using only the safe tools from W11: confirm the version from a second source, read the package list over SSH, read a config value, or run a harmless test of the vulnerable behaviour.
-- [ ] **The AI is never the proof.** A finding only changes from "inferred" to "confirmed" when one of those tools returns hard evidence. If nothing proves it, it stays "inferred" and we say why.
-- [ ] Everything the verifier ran and saw is saved with the finding, so the user can read exactly how it was confirmed.
-- [ ] Limits: only runs when the user clicks, only on that one host and port, read-only, no exploits, a time and step limit, and the same allowed-targets list as MCP.
+- [ ] Simple YAML check format (banner match, HTTP request and response match, version range). Only safe, read-only actions are allowed.
+- [ ] **Nuclei import:** convert safe Nuclei templates (MIT) into our YAML format, refuse anything that isn't read-only
+- [ ] **CVE bot:** scheduled GitHub Action that watches the CVE list and CISA KEV, filters to what we can detect over the network, and opens a PR with a draft YAML check, its tests and how to verify it. A human always merges.
+- [ ] **Mid-point demo** to supervisors: lab scan, fix, rescan and diff, retro-scan from new data, web UI, logged-in scan, MCP
+- [ ] 5 checks as YAML (proves the format works)
 
-**Tests:** YAML loader tests (good files, bad files, unsafe actions rejected), and the bot tested on saved CVE samples so it doesn't need the internet in CI. The verifier is tested with a fake model that tries to break the rules: it must not be able to touch another host, run anything outside the safe tools, go past the step limit, or confirm a finding without real evidence.
-**Done when:** the bot opens a real PR for a real recent CVE, and verifying the lab's old OpenSSH turns it into "confirmed" with the proof shown.
+**Tests:** YAML loader tests (good, bad, unsafe rejected), Nuclei conversion tests on real templates (safe ones convert, unsafe ones are refused), the bot tested on saved CVE samples with no internet.
+**Done when:** the bot opens a real PR for a real recent CVE, and the demo runs end to end twice in a row.
 
-### W16 (1 to 7 Mar): reports and the benchmark against Nessus
+### W9 (11 to 17 Jan): defence model and verifier model
 
-**Goal:** something to hand to a manager, and numbers for the thesis.
+**Goal:** exact fix steps for every host, and one-click proof that a finding is real.
 
-- [ ] HTML report (fix-first, with evidence) and SARIF output for CI tools
-- [ ] **Benchmark:** scan the same lab with Nessus Essentials and Nuqs. Compare time, findings, false positives and missed findings. Save the raw results.
-- [ ] Measure the verifier: false positives before and after verifying, and how long a verify takes. These real numbers go in the thesis.
-- [ ] Fix the slowest parts found by the benchmark
+- [ ] Model setup: local Ollama by default, or any OpenAI-compatible endpoint from the config. Nuqs works fully without a model.
+- [ ] **Defence model:** "How do I fix this?" gives exact steps for that host from the evidence, OS, version and our fix data. Marked as AI-written, never run by Nuqs.
+- [ ] **Verifier model:** "Verify" lets the AI plan extra checks with only the safe tools from W5 (version from a second source, package list over SSH, a config value, a harmless test of the vulnerable behaviour)
+- [ ] **The AI is never the proof.** A finding becomes "confirmed" only when a tool returns hard evidence. Every step is saved and shown.
+- [ ] Limits: only on a click, one host and port, read-only, step and time limits, allowed targets
+- [ ] Both available in the UI, the API and MCP
+- [ ] 5 checks
 
-**Tests:** report output tests (HTML is valid, SARIF matches its schema).
-**Done when:** the benchmark table is in the thesis and reproducible with one script.
+**Tests:** both models tested with a fake model. The defence model gets the right facts and its output is labelled and never run. The fake verifier tries to break every rule (other hosts, unknown tools, past the step limit, "confirming" with no evidence) and must fail every time.
+**Done when:** verifying the lab's old OpenSSH turns it "confirmed" with the proof shown, and a fake finding stays "inferred" with the reason.
 
-### W17 (8 to 14 Mar): freeze
+---
+
+## Month 3: going wide
+
+### W10 (18 to 24 Jan): reports, scheduled scans and alerts
+
+**Goal:** Nuqs runs by itself and tells people what matters.
+
+- [ ] Reports: HTML (fix-first, with evidence), PDF (from the HTML), CSV, SARIF for CI tools
+- [ ] Two report styles: **summary** for managers (top fixes, trend) and **technical** (everything)
+- [ ] **Scheduled scans** (daily, weekly, custom), set from the CLI, the API and the UI
+- [ ] **Alerts** by email and webhook (Slack and Teams work through webhooks) for: new critical finding, newly exploited CVE that affects you (from retro-scan), scan failed
+- [ ] GitHub Action: `nuqs-org/nuqs-action` to scan in CI and upload SARIF
+- [ ] 5 checks
+
+**Tests:** report output tests (valid HTML, SARIF matches its schema, CSV opens right), schedule tests with a fake clock, alert tests with a fake mail server and a fake webhook.
+**Done when:** a weekly scheduled scan of the lab sends a webhook alert when we add a new problem.
+
+### W11 (25 to 31 Jan): Windows logged-in scanning and Windows checks
+
+**Goal:** Windows machines get the same depth as Linux.
+
+- [ ] Windows credentials over **WinRM**, in the credential check too
+- [ ] Collect installed software, installed updates (KBs) and Windows version into the inventory
+- [ ] Match against Microsoft advisories (MSRC data as a new feed)
+- [ ] Windows lab machine (a Windows Server evaluation VM in the lab notes, not in CI if licensing doesn't allow it)
+- [ ] 5 Windows checks: `windows-missing-updates`, `windows-smbv1`, `windows-firewall-off`, `windows-defender-off`, `windows-local-admin-password-reuse` (safe check only)
+
+**Tests:** WinRM tested against a fake WinRM server with recorded responses, MSRC import on saved samples, matching tests for KB-based fixes.
+**Done when:** a logged-in scan of a Windows VM shows missing updates grouped by KB.
+
+### W12 (1 to 7 Feb): distributed scan workers and multiple users
+
+**Goal:** scan big or separate networks from one place, with a team.
+
+- [ ] `nuqs worker` runs on another machine and takes scan jobs from the main server
+- [ ] Workers connect over HTTPS with a join token, jobs are assigned by network ("this worker scans 10.20.0.0/16")
+- [ ] A worker going offline mid-scan doesn't lose the scan, the job goes to another worker or waits
+- [ ] **Multiple users** with simple roles: admin, scanner (can run scans), viewer (read only)
+- [ ] Audit log: who scanned what, when
+- [ ] 5 checks
+
+**Tests:** worker tests with several local workers, killing a worker mid-scan, role tests for every API endpoint (each role can do exactly what it should and nothing else), audit log tests.
+**Done when:** two workers scan two lab networks into one result, and a viewer can see but not start scans.
+
+### W13 (8 to 14 Feb): speed, smart scheduling, benchmark against Nessus
+
+**Goal:** prove we're faster and at least as accurate, with numbers.
+
+- [ ] Big networks: scan a /16 in the lab setup without running out of memory, results stream to the database as they come
+- [ ] **Slow checks first:** per-check time budgets learned from past scans, so nothing drags at the end
+- [ ] Honest progress: phase, running checks, ETA, and a "stop and keep what we have" button
+- [ ] Nmap tuning per network size (timing, host groups, parallelism)
+- [ ] **Benchmark:** same lab with Nessus Essentials and Nuqs. Time, findings, false positives (before and after verifying), missed findings. One script reproduces it.
+- [ ] Fix the slowest parts the benchmark finds
+- [ ] 5 checks
+
+**Tests:** load test with a fake scanner returning 50,000 hosts (memory stays flat), scheduler tests with fake check durations, a benchmark script that runs in CI on a small lab.
+**Done when:** the benchmark table is in the thesis, and our "99%" never sits still.
+
+---
+
+## Month 4: shipping and proving it
+
+### W14 (15 to 21 Feb): packaging and installing
+
+**Goal:** anyone can install Nuqs in one command.
+
+- [ ] Release builds for Linux, macOS and Windows with GoReleaser, signed, with checksums
+- [ ] Docker image (Nmap included), `docker run` in the README
+- [ ] Homebrew tap and a one-line install script
+- [ ] First-run setup: creates the config, downloads the data feeds, prints the login token
+- [ ] Optional: a desktop app that wraps the same web UI with Wails (no second UI to maintain)
+- [ ] 5 checks
+
+**Tests:** CI installs each package on a clean machine (Ubuntu, macOS, Windows) and runs a smoke scan, the Docker image scans the lab.
+**Done when:** a new person installs Nuqs from the README and scans their network in under 5 minutes.
+
+### W15 (22 to 28 Feb): security review of Nuqs itself
+
+**Goal:** a security tool must be secure itself.
+
+- [ ] Threat model written down (what an attacker could do with Nuqs or to Nuqs)
+- [ ] Long fuzz runs (hours per target) on every parser, fix everything found
+- [ ] `gosec` and dependency checks added to CI
+- [ ] Review of the API (auth, rate limits, input checks), the MCP server and the verifier's limits
+- [ ] Make sure scanned servers can't attack Nuqs (huge responses, slow responses, weird bytes), with tests
+- [ ] Hosted docs: every page reviewed, screenshots updated
+
+**Tests:** one test per item in the threat model.
+**Done when:** the threat model has no open items marked high.
+
+### W16 (1 to 7 Mar): real users and thesis results
+
+**Goal:** prove it's easy and useful for people who aren't us.
+
+- [ ] 5 to 10 real users (classmates, a teacher's lab, a small office with permission) install and use Nuqs with a short task list
+- [ ] Record where they get stuck, fix the top 10 problems
+- [ ] Final numbers for the thesis: speed, accuracy, false positives before and after verifying, checks count, test coverage
+- [ ] Thesis chapters on design, testing and results
+
+**Done when:** every user finished the task list, and the top problems are fixed.
+
+### W17 (8 to 14 Mar): freeze, v1.0, demo
 
 **Goal:** nothing new, everything solid.
 
 - [ ] Feature freeze on Monday, only fixes after that
-- [ ] Long fuzzing runs (a few hours per target) and fix anything found
-- [ ] Every doc page reviewed and up to date
-- [ ] Final demo script, rehearsed twice
-- [ ] Tag and release **v1.0** with binaries for Linux and macOS
-- [ ] Thesis chapters on design, testing and results finished
+- [ ] Release **v1.0**
+- [ ] Final demo script, rehearsed three times
+- [ ] Thesis finished and reviewed
 
-**Done when:** v1.0 is released, the demo works twice in a row, the thesis is ready.
+**Done when:** v1.0 is out, the demo works three times in a row, the thesis is ready.
 
 ### Buffer (15 to 16 Mar)
 
@@ -275,11 +314,7 @@ Final submission. Anything that slipped gets cut, not rushed.
 
 ## Later (after the FYP)
 
-Things we know we want but won't fit in 4 months:
-
-- Windows logged-in scanning (WinRM)
-- More scan workers on other machines (distributed scanning)
-- Importing Nuclei templates and Nmap NSE scripts as checks
-- A Windows build
-- Letting an AI draft the CVE bot's checks (moved out of W15 to make room for the verifier)
-- Scheduled scans and email or webhook alerts
+- AI drafting checks for the CVE bot
+- Agents installed on hosts (for laptops that are often offline)
+- Cloud account checks (AWS, Azure, GCP settings)
+- A plugin marketplace for community checks

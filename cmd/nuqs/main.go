@@ -10,9 +10,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/PremadeS/nuqs/checks"
-	"github.com/PremadeS/nuqs/internal/cli"
-	"github.com/PremadeS/nuqs/internal/nmap"
+	"github.com/nuqs-org/nuqs/checks"
+	"github.com/nuqs-org/nuqs/internal/cli"
+	"github.com/nuqs-org/nuqs/internal/nmap"
 )
 
 // version is set at build time with -ldflags "-X main.version=v0.1.0".

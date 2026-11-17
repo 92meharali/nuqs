@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PremadeS/nuqs/internal/engine"
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/engine"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 func sample() *engine.Report {

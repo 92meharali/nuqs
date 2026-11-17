@@ -23,10 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/PremadeS/nuqs/checks"
-	"github.com/PremadeS/nuqs/internal/cli"
-	"github.com/PremadeS/nuqs/internal/engine"
-	"github.com/PremadeS/nuqs/internal/nmap"
+	"github.com/nuqs-org/nuqs/checks"
+	"github.com/nuqs-org/nuqs/internal/cli"
+	"github.com/nuqs-org/nuqs/internal/engine"
+	"github.com/nuqs-org/nuqs/internal/nmap"
 )
 
 func TestFullScan(t *testing.T) {

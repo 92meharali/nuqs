@@ -8,7 +8,7 @@
 ## Build
 
 ```bash
-git clone https://github.com/PremadeS/nuqs.git
+git clone https://github.com/nuqs-org/nuqs.git
 cd nuqs
 go build -o nuqs ./cmd/nuqs
 ./nuqs version

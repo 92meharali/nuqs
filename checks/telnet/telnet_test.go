@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/PremadeS/nuqs/internal/check"
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 func TestInfo(t *testing.T) {

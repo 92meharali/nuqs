@@ -6,10 +6,10 @@
 package checks
 
 import (
-	"github.com/PremadeS/nuqs/checks/ftpanon"
-	"github.com/PremadeS/nuqs/checks/httpheaders"
-	"github.com/PremadeS/nuqs/checks/telnet"
-	"github.com/PremadeS/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/checks/ftpanon"
+	"github.com/nuqs-org/nuqs/checks/httpheaders"
+	"github.com/nuqs-org/nuqs/checks/telnet"
+	"github.com/nuqs-org/nuqs/internal/check"
 )
 
 // All returns a fresh list of every built-in check.

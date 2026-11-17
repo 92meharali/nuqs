@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/PremadeS/nuqs/internal/check"
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 // Defaults used when the Engine fields are left at zero.

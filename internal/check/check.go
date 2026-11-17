@@ -13,7 +13,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/PremadeS/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/model"
 )
 
 // Info describes a check. The engine uses it to decide where the check runs
