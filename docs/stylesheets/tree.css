@@ -1,0 +1,35 @@
+/* Styles the file tree on the architecture page. */
+
+.file-tree ul {
+  list-style: none;
+  margin: 0 0 0 0.6rem !important;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+}
+.file-tree > ul {
+  margin-left: 0 !important;
+  padding-left: 0;
+  border-left: none;
+}
+.file-tree li {
+  margin: 0.15rem 0 !important;
+}
+.file-tree summary {
+  cursor: pointer;
+}
+.file-tree summary::marker {
+  color: var(--md-default-fg-color--light);
+}
+.file-tree li:not(:has(details)) {
+  padding-left: 1rem; /* lines files and closed folders up with folder names */
+}
+.file-tree code {
+  font-weight: 600;
+}
+.file-tree .note {
+  margin-left: 0.5rem;
+  color: var(--md-default-fg-color--light);
+}
+.file-tree .note code {
+  font-weight: normal;
+}

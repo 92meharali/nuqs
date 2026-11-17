@@ -4,6 +4,7 @@ package main
 
 import (
 	"fmt"
+	"html"
 	"slices"
 	"strings"
 )
@@ -85,8 +86,8 @@ func Render(r *Repo) string {
 	}
 
 	w("\n## What's where\n\n")
-	w("Every file in the repo, as git sees it, except the `docs/` and `test/` folders.\n\n")
-	w("```text\n%s```\n", tree(r))
+	w("Every file in the repo, as git sees it, except the `docs/` and `test/` folders. Click a folder to open or close it.\n\n")
+	w("%s", tree(r))
 	return b.String()
 }
 
@@ -167,8 +168,8 @@ func orDash(s string) string {
 	return strings.ReplaceAll(s, "|", "\\|")
 }
 
-// tree draws the folders and files like the `tree` command, with a short
-// note after each folder that has one.
+// tree draws the folders and files as a tree that opens and closes, with
+// a short note after each folder and file that has one.
 func tree(r *Repo) string {
 	notes := map[string]string{}
 	for k, v := range folderNotes {
@@ -223,57 +224,54 @@ func tree(r *Repo) string {
 		d.files = append(d.files, parts[len(parts)-1])
 	}
 
+	// Draw it as nested lists, each folder is a <details> the reader can
+	// open and close. Raw HTML must have no blank lines, or Markdown breaks it.
 	var b strings.Builder
-	var walk func(d *dir, path, indent string)
-	walk = func(d *dir, path, indent string) {
+	var walk func(d *dir, path string)
+	walk = func(d *dir, path string) {
 		var names []string
 		for n := range d.dirs {
 			names = append(names, n)
 		}
 		slices.Sort(names)
-		total := len(names) + len(d.files)
-		i := 0
+		b.WriteString("<ul>\n")
 		for _, n := range names {
-			i++
-			branch, next := "├── ", "│   "
-			if i == total {
-				branch, next = "└── ", "    "
-			}
 			full := strings.TrimPrefix(path+"/"+n, "/")
-			line := indent + branch + n + "/"
-			if note := notes[full]; note != "" {
-				line += pad(line) + "# " + note
+			label := "<code>" + html.EscapeString(n) + "/</code>" + noteHTML(notes[full])
+			sub := d.dirs[n]
+			if len(sub.dirs) == 0 && len(sub.files) == 0 { // a collapsed testdata folder
+				b.WriteString(`<li class="folder">` + label + "</li>\n")
+				continue
 			}
-			b.WriteString(line + "\n")
-			walk(d.dirs[n], full, indent+next)
+			b.WriteString("<li><details><summary>" + label + "</summary>\n")
+			walk(sub, full)
+			b.WriteString("</details></li>\n")
 		}
 		for _, f := range d.files {
-			i++
-			branch := "├── "
-			if i == total {
-				branch = "└── "
+			note := r.Notes[strings.TrimPrefix(path+"/"+f, "/")]
+			if note == notes[path] {
+				note = "" // it only repeats the folder's note (one-file packages)
 			}
-			line := indent + branch + f
-			// Skip the note if it only repeats the folder's (one-file packages).
-			if note := r.Notes[strings.TrimPrefix(path+"/"+f, "/")]; note != "" && note != notes[path] {
-				line += pad(line) + "# " + note
-			}
-			b.WriteString(line + "\n")
+			b.WriteString("<li><code>" + html.EscapeString(f) + "</code>" + noteHTML(note) + "</li>\n")
 		}
+		b.WriteString("</ul>\n")
 	}
-	b.WriteString(".\n")
-	walk(root, "", "")
+	b.WriteString(`<div class="file-tree">` + "\n")
+	walk(root, "")
+	b.WriteString("</div>\n")
 	return b.String()
 }
 
-// pad lines notes up in one column so the tree is easy to scan.
-func pad(line string) string {
-	const col = 40
-	n := len([]rune(line))
-	if n >= col {
-		return "  "
+// noteHTML turns a note into a grey span, with `code` kept as code.
+func noteHTML(note string) string {
+	if note == "" {
+		return ""
 	}
-	return strings.Repeat(" ", col-n)
+	parts := strings.Split(html.EscapeString(note), "`")
+	for i := 1; i < len(parts); i += 2 {
+		parts[i] = "<code>" + parts[i] + "</code>"
+	}
+	return ` <span class="note">` + strings.Join(parts, "") + "</span>"
 }
 
 // testdataDir returns the outermost testdata folder a file is in.

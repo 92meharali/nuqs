@@ -103,7 +103,7 @@ func TestRenderFixture(t *testing.T) {
 		"| `checks/y` | - | `a`, `b` |",
 		"| `a` | Holds the shared types. | nothing else in Nuqs |",
 		"| `smoke` (tests) | Runs quick checks of the whole demo. | `b` |",
-		"└── go.mod",
+		"<li><code>go.mod</code>",
 	} {
 		if !strings.Contains(page, want) {
 			t.Errorf("page is missing %q\n\n%s", want, page)
@@ -111,20 +111,29 @@ func TestRenderFixture(t *testing.T) {
 	}
 	// Tree lines: the right note on the right line (spacing doesn't matter).
 	for _, pair := range [][2]string{
-		{"├── a/", "# Holds the shared types."},
-		{"│   ├── testdata/", "# Sample files used by the tests next to it (1 file)."},
-		{"├── cmd/", "# Programs you can run."},
-		{"── b.go", ""}, // b.go holds the package doc, so it doesn't repeat the folder's note
+		{"<summary><code>a/</code>", "Holds the shared types."},
+		{`<li class="folder"><code>testdata/</code>`, "Sample files used by the tests next to it (1 file)."},
+		{"<summary><code>cmd/</code>", "Programs you can run."},
+		{"<li><code>b.go</code>", ""}, // b.go holds the package doc, so it doesn't repeat the folder's note
 	} {
 		if !hasLine(page, pair[0], pair[1]) {
 			t.Errorf("no tree line with %q and %q\n\n%s", pair[0], pair[1], page)
 		}
 	}
+	// The tree must be valid HTML that opens and closes.
+	for open, closing := range map[string]string{"<details>": "</details>", "<ul>": "</ul>", "<li": "</li>"} {
+		if o, c := strings.Count(page, open), strings.Count(page, closing); o == 0 || o != c {
+			t.Errorf("%d %s but %d %s", o, open, c, closing)
+		}
+	}
+	if strings.Contains(page[strings.Index(page, `<div class="file-tree">`):], "\n\n") {
+		t.Error("the tree has a blank line, Markdown would break it")
+	}
 	if strings.Contains(page, "fixture.go") {
 		t.Error("files inside testdata/ should be collapsed into one line")
 	}
 	// docs/ and test/ must not appear in the diagram, the table or the tree.
-	for _, gone := range []string{"e2e", "index.md", "── docs/", "── test/", "n_test_", "| `test/"} {
+	for _, gone := range []string{"e2e", "index.md", "<code>docs/</code>", "<code>test/</code>", "n_test_", "| `test/"} {
 		if strings.Contains(page, gone) {
 			t.Errorf("page contains %q, but docs/ and test/ must be left out", gone)
 		}
@@ -286,9 +295,21 @@ func hasLine(page, start, end string) bool {
 		if !strings.Contains(line, start) {
 			continue
 		}
-		if end == "" && !strings.Contains(line, "#") || end != "" && strings.Contains(line, end) {
+		if end == "" && !strings.Contains(line, `class="note"`) || end != "" && strings.Contains(line, end) {
 			return true
 		}
 	}
 	return false
+}
+
+func TestNoteHTML(t *testing.T) {
+	for in, want := range map[string]string{
+		"":                       "",
+		"Plain note.":            ` <span class="note">Plain note.</span>`,
+		"Builds `docs/` <fast>.": ` <span class="note">Builds <code>docs/</code> &lt;fast&gt;.</span>`,
+	} {
+		if got := noteHTML(in); got != want {
+			t.Errorf("noteHTML(%q) = %q, want %q", in, got, want)
+		}
+	}
 }

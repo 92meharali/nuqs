@@ -24,6 +24,9 @@ theme:
         icon: material/weather-sunny
         name: Light mode
 
+extra_css:
+  - stylesheets/tree.css
+
 nav:
   - Home: index.md
   - Getting started: getting-started.md
