@@ -1,3 +1,5 @@
+// Tests the web headers check against local test servers.
+
 package httpheaders
 
 import (

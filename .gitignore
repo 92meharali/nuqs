@@ -1,3 +1,5 @@
+# Files git should ignore, like build output and generated docs.
+
 # Build output
 /nuqs
 /dist/

@@ -1,3 +1,5 @@
+// Reads the repo: its packages, what they import, and its files.
+
 package main
 
 import (
@@ -25,8 +27,9 @@ type Package struct {
 // Repo is everything the generator learned about the repo.
 type Repo struct {
 	Module   string
-	Packages []Package // sorted by Dir
-	Files    []string  // every file shown in the tree, sorted, relative to root
+	Packages []Package         // sorted by Dir
+	Files    []string          // every file shown in the tree, sorted, relative to root
+	Notes    map[string]string // file path -> the description at the top of that file
 }
 
 // Scan reads the repo at root and works out its packages and files.
@@ -46,13 +49,16 @@ func Scan(root string) (*Repo, error) {
 			return nil, err
 		}
 	}
-	r := &Repo{Module: module}
+	r := &Repo{Module: module, Notes: map[string]string{}}
 	pkgs := map[string]*Package{}
 	for _, rel := range files {
 		if excluded(rel) {
 			continue
 		}
 		r.Files = append(r.Files, rel)
+		if note := fileNote(root, rel); note != "" {
+			r.Notes[rel] = note
+		}
 		// Go files under testdata are test fixtures, not packages.
 		if strings.HasSuffix(rel, ".go") && !inTestdata(rel) {
 			if err := addGoFile(pkgs, module, root, rel); err != nil {

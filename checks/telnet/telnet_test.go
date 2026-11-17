@@ -1,3 +1,5 @@
+// Tests the Telnet check.
+
 package telnet
 
 import (

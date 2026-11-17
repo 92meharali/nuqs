@@ -1,3 +1,5 @@
+// Tests the FTP check against a small fake FTP server.
+
 package ftpanon
 
 import (

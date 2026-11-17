@@ -1,3 +1,5 @@
+# Rebuilds docs/architecture.md on every push and commits it if it changed.
+
 name: Architecture diagram
 
 # On every push, rebuild docs/architecture.md from the code and commit it if

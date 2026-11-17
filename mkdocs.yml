@@ -1,8 +1,10 @@
+# Settings for the docs website (MkDocs Material).
+
 site_name: Nuqs
 site_description: A simple, open-source network vulnerability scanner built on Nmap.
-site_url: https://premades.github.io/nuqs/
-repo_url: https://github.com/PremadeS/nuqs
-repo_name: PremadeS/nuqs
+site_url: https://nuqs-org.github.io/nuqs/
+repo_url: https://github.com/nuqs-org/nuqs
+repo_name: nuqs-org/nuqs
 edit_uri: edit/main/docs/
 
 theme:

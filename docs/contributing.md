@@ -16,6 +16,14 @@ If it can be simple, it should be simple. Before adding a library, a config opti
 ## Docs
 
 - Every public function, type and package needs a doc comment. CI checks this.
+- Every file starts with a one-line description of what's in it. The [Architecture](architecture.md) page shows these next to each file, and a test fails if one is missing.
+
+| File type | How to write the description |
+|---|---|
+| Go | `// Tests the engine: timeouts, panics and sorting.` on the first line, then a **blank line**, then `package ...`. The blank line matters, without it Go treats the comment as the package description. A file that holds the package doc comment doesn't need one. |
+| YAML, shell, `.gitignore` | `# What this file does.` on the first line (after `#!/usr/bin/env bash` in scripts) |
+| `go.mod` | `// What this file does.` on the first line |
+| Markdown, XML | `<!-- What this file does. -->` at the top |
 - Comments explain **why**, the code already shows what.
 - Keep docs short and plain, like you're explaining it to a teammate. Use commas, not semicolons.
 - The API pages on the website are generated from these comments, so you never edit them by hand.

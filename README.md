@@ -1,3 +1,5 @@
+<!-- The front page of the repo: what Nuqs is and how to start. -->
+
 # Nuqs
 
 [![CI](https://github.com/nuqs-org/nuqs/actions/workflows/ci.yml/badge.svg)](https://github.com/nuqs-org/nuqs/actions/workflows/ci.yml)

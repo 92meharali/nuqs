@@ -1,3 +1,5 @@
+// Tests target parsing and the safety limit, and fuzzes it with random input.
+
 package target
 
 import (

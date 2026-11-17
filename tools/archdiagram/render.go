@@ -1,8 +1,9 @@
+// Turns what we read into the architecture page: diagram, table and file tree.
+
 package main
 
 import (
 	"fmt"
-	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -59,7 +60,7 @@ func Render(r *Repo) string {
 
 	w("# Architecture\n\n")
 	w("!!! note \"This page is generated\"\n")
-	w("    `tools/archdiagram` builds it from the code on every push, so it always matches what's in the repo. Don't edit it by hand. To change a description, change the package's doc comment.\n\n")
+	w("    `tools/archdiagram` builds it from the code on every push, so it always matches what's in the repo. Don't edit it by hand. Every description comes from the file itself: the package doc comment for folders, and the one-line comment at the top of each file.\n\n")
 
 	w("## How the packages connect\n\n")
 	w("An arrow means \"uses\". For example `internal/cli --> internal/engine` means the CLI calls the engine.")
@@ -178,12 +179,21 @@ func tree(r *Repo) string {
 			notes[p.Dir] = p.Summary
 		}
 	}
+	// testdata folders are shown as one line, they're only test fixtures.
+	fixtures := map[string]int{}
+	var files []string
 	for _, f := range r.Files {
-		for d := filepath.Dir(f); d != "."; d = filepath.Dir(d) {
-			if filepath.Base(d) == "testdata" && notes[d] == "" {
-				notes[d] = "Sample files used by the tests next to it."
+		if d, ok := testdataDir(f); ok {
+			if fixtures[d] == 0 {
+				files = append(files, d+"/") // a trailing slash marks a collapsed folder
 			}
+			fixtures[d]++
+			continue
 		}
+		files = append(files, f)
+	}
+	for d, n := range fixtures {
+		notes[d] = fmt.Sprintf("Sample files used by the tests next to it (%d %s).", n, plural(n, "file", "files"))
 	}
 
 	// Build a nested structure from the flat file list.
@@ -193,7 +203,9 @@ func tree(r *Repo) string {
 	}
 	newDir := func() *dir { return &dir{dirs: map[string]*dir{}} }
 	root := newDir()
-	for _, f := range r.Files {
+	for _, f := range files {
+		collapsed := strings.HasSuffix(f, "/")
+		f = strings.TrimSuffix(f, "/")
 		parts := strings.Split(f, "/")
 		d := root
 		for _, part := range parts[:len(parts)-1] {
@@ -201,6 +213,12 @@ func tree(r *Repo) string {
 				d.dirs[part] = newDir()
 			}
 			d = d.dirs[part]
+		}
+		if collapsed {
+			if d.dirs[parts[len(parts)-1]] == nil {
+				d.dirs[parts[len(parts)-1]] = newDir()
+			}
+			continue
 		}
 		d.files = append(d.files, parts[len(parts)-1])
 	}
@@ -235,7 +253,12 @@ func tree(r *Repo) string {
 			if i == total {
 				branch = "└── "
 			}
-			b.WriteString(indent + branch + f + "\n")
+			line := indent + branch + f
+			// Skip the note if it only repeats the folder's (one-file packages).
+			if note := r.Notes[strings.TrimPrefix(path+"/"+f, "/")]; note != "" && note != notes[path] {
+				line += pad(line) + "# " + note
+			}
+			b.WriteString(line + "\n")
 		}
 	}
 	b.WriteString(".\n")
@@ -245,10 +268,28 @@ func tree(r *Repo) string {
 
 // pad lines notes up in one column so the tree is easy to scan.
 func pad(line string) string {
-	const col = 34
+	const col = 40
 	n := len([]rune(line))
 	if n >= col {
 		return "  "
 	}
 	return strings.Repeat(" ", col-n)
+}
+
+// testdataDir returns the outermost testdata folder a file is in.
+func testdataDir(f string) (string, bool) {
+	parts := strings.Split(f, "/")
+	for i, p := range parts[:len(parts)-1] {
+		if p == "testdata" {
+			return strings.Join(parts[:i+1], "/"), true
+		}
+	}
+	return "", false
+}
+
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
 }

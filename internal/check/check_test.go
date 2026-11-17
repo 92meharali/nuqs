@@ -1,3 +1,5 @@
+// Tests when checks apply and how check lists are validated.
+
 package check
 
 import (

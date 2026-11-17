@@ -1,3 +1,5 @@
+// Tests the text and JSON reports.
+
 package output
 
 import (

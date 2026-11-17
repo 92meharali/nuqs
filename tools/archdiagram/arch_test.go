@@ -1,3 +1,5 @@
+// Tests the generator, and checks it against go list so the diagram is always right.
+
 package main
 
 import (
@@ -101,14 +103,25 @@ func TestRenderFixture(t *testing.T) {
 		"| `checks/y` | - | `a`, `b` |",
 		"| `a` | Holds the shared types. | nothing else in Nuqs |",
 		"| `smoke` (tests) | Runs quick checks of the whole demo. | `b` |",
-		"├── a/                            # Holds the shared types.",
-		"│   ├── testdata/                 # Sample files used by the tests next to it.",
-		"├── cmd/                          # Programs you can run.",
 		"└── go.mod",
 	} {
 		if !strings.Contains(page, want) {
 			t.Errorf("page is missing %q\n\n%s", want, page)
 		}
+	}
+	// Tree lines: the right note on the right line (spacing doesn't matter).
+	for _, pair := range [][2]string{
+		{"├── a/", "# Holds the shared types."},
+		{"│   ├── testdata/", "# Sample files used by the tests next to it (1 file)."},
+		{"├── cmd/", "# Programs you can run."},
+		{"── b.go", ""}, // b.go holds the package doc, so it doesn't repeat the folder's note
+	} {
+		if !hasLine(page, pair[0], pair[1]) {
+			t.Errorf("no tree line with %q and %q\n\n%s", pair[0], pair[1], page)
+		}
+	}
+	if strings.Contains(page, "fixture.go") {
+		t.Error("files inside testdata/ should be collapsed into one line")
 	}
 	// docs/ and test/ must not appear in the diagram, the table or the tree.
 	for _, gone := range []string{"e2e", "index.md", "── docs/", "── test/", "n_test_", "| `test/"} {
@@ -244,4 +257,37 @@ func TestMatchesGoList(t *testing.T) {
 	if len(fromGo) < 10 {
 		t.Errorf("go list only found %d packages, something is off", len(fromGo))
 	}
+}
+
+// Every file in Nuqs (except test fixtures) must start with a short
+// description, so the file map on the architecture page has no gaps.
+func TestEveryFileDescribed(t *testing.T) {
+	r, err := Scan("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var missing []string
+	for _, f := range r.Files {
+		if _, fixture := testdataDir(f); !fixture && r.Notes[f] == "" {
+			missing = append(missing, f)
+		}
+	}
+	if len(missing) > 0 {
+		t.Errorf("these files need a one-line description at the top (see docs/contributing.md):\n  %s",
+			strings.Join(missing, "\n  "))
+	}
+}
+
+// hasLine reports whether one line of page contains both start and end
+// (or has no note at all when end is "").
+func hasLine(page, start, end string) bool {
+	for _, line := range strings.Split(page, "\n") {
+		if !strings.Contains(line, start) {
+			continue
+		}
+		if end == "" && !strings.Contains(line, "#") || end != "" && strings.Contains(line, end) {
+			return true
+		}
+	}
+	return false
 }

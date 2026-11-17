@@ -1,3 +1,5 @@
+// Runs the whole CLI with a fake Nmap, so no network is needed.
+
 package cli
 
 import (

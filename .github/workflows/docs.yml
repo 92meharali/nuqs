@@ -1,3 +1,5 @@
+# Builds the docs website on every pull request and publishes it from the default branch.
+
 name: Docs
 
 # Builds the website on every PR (so broken docs fail the PR) and publishes

@@ -1,3 +1,5 @@
+// Tests severities, finding IDs and the JSON shape.
+
 package model
 
 import (

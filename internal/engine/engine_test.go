@@ -1,3 +1,5 @@
+// Tests the engine: timeouts, panics, cancelling, the worker limit and sorting.
+
 package engine
 
 import (

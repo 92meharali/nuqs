@@ -1,3 +1,5 @@
+# Lint settings. Also makes sure everything public has a doc comment.
+
 version: "2"
 
 linters:

@@ -15,7 +15,7 @@ if [ ! -f .venv/.installed ] || [ docs/requirements.txt -nt .venv/.installed ]; 
   touch .venv/.installed
 fi
 
-./scripts/gen-api-docs.sh
+go run ./tools/apidocs
 go run ./tools/archdiagram
 
 if [ "${1:-serve}" = "build" ]; then

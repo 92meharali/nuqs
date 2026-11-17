@@ -1,3 +1,5 @@
+// Tests building the Nmap command, reading its XML and running it.
+
 package nmap
 
 import (

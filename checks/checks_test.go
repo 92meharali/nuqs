@@ -1,3 +1,5 @@
+// Makes sure every built-in check is valid, tested and listed.
+
 package checks
 
 import (
