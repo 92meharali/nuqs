@@ -8,6 +8,7 @@ package checks
 import (
 	"github.com/nuqs-org/nuqs/checks/ftpanon"
 	"github.com/nuqs-org/nuqs/checks/httpheaders"
+	"github.com/nuqs-org/nuqs/checks/redisnoauth"
 	"github.com/nuqs-org/nuqs/checks/telnet"
 	"github.com/nuqs-org/nuqs/internal/check"
 )
@@ -17,6 +18,7 @@ func All() []check.Check {
 	return []check.Check{
 		ftpanon.Check{},
 		httpheaders.Check{},
+		redisnoauth.Check{},
 		telnet.Check{},
 	}
 }
