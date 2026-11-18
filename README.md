@@ -9,6 +9,8 @@ A simple, open-source network vulnerability scanner built on Nmap. Our final yea
 
 **Docs:** https://nuqs-org.github.io/nuqs/
 
+**Chat:** https://nuqs.duckdns.org (Mattermost)
+
 ## Quick start
 
 You need Go 1.24+ and Nmap.
