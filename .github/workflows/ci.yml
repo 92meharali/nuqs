@@ -60,14 +60,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pkg: [./internal/target, ./internal/nmap]
+        include:
+          - { pkg: ./internal/target, fn: FuzzParse }
+          - { pkg: ./internal/nmap, fn: FuzzParse }
+          - { pkg: ./internal/version, fn: FuzzCompare }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
       - name: Fuzz for 30 seconds
-        run: go test ${{ matrix.pkg }} -run='^$' -fuzz=FuzzParse -fuzztime=30s -fuzzminimizetime=0
+        run: go test ${{ matrix.pkg }} -run='^$' -fuzz=${{ matrix.fn }} -fuzztime=30s -fuzzminimizetime=0
 
   integration:
     name: Integration (real Nmap)
