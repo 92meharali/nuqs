@@ -25,13 +25,19 @@ It skips itself if Nmap isn't installed. CI always runs it.
 ## End-to-end lab report
 
 With Go, Nmap and Docker Compose installed, run `./scripts/test-http-lab.sh`.
-It builds Nuqs, starts nginx and BusyBox telnetd, and waits for both services
-to be ready. Keep loopback ports 18080 and 12323 free. The Telnet daemon
-negotiates the protocol and closes each session without starting a shell.
-Nuqs runs Nmap against both ports and selects checks from its built-in registry.
+The script builds the CLI and the FTP image from the checkout, starts the
+three services, and waits for them to be ready. The first build downloads the
+pinned images and the Alpine vsftpd package. Keep these loopback ports free.
 
-Expect one medium Telnet finding, one low HTTP header finding, zero check
-errors, and a match with `lab/expected-report.json`. The comparison validates the scan
+| Service | Port | Expected finding |
+| --- | --- | --- |
+| vsftpd | 12121 | Medium. The empty public service accepts the anonymous handshake and prohibits file transfers. |
+| BusyBox telnetd | 12323 | Medium. The listener negotiates Telnet and closes the session without starting a shell. |
+| nginx | 18080 | Low. The static page omits the three HTTP security headers checked by Nuqs. |
+
+Nuqs uses real Nmap discovery and its built-in check registry. Expect three
+findings, zero check errors, and a match with the checked-in
+`lab/expected-report.json`. The comparison validates the scan
 timestamps and substitutes two fixed values. Changes to the inventory,
 findings or errors produce a unified diff. Review that diff before updating
 the expected report. The script removes the lab containers on exit.

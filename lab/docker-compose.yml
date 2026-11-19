@@ -1,4 +1,4 @@
-# Runs the static web page and a Telnet listener that closes each session without a login.
+# Runs the three loopback services for the Nuqs report test.
 services:
   web:
     image: nginx:stable-alpine@sha256:3bc3836dc0be3b811f238210360bf8e7ca8a2d0effdae46160bf1f3578710051
@@ -31,3 +31,15 @@ services:
       interval: 1s
       timeout: 2s
       retries: 20
+  ftp:
+    build: ./ftp
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, SYS_CHROOT]
+    ports: ["127.0.0.1:12121:2121"]
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -lnt | grep -q ':2121 '"]
+      interval: 1s
+      timeout: 2s
+      retries: 15

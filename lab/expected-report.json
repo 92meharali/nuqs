@@ -2,6 +2,17 @@
   "errors": [],
   "findings": [
     {
+      "id": "ftp-anonymous-login|127.0.0.1|12121/tcp",
+      "check_id": "ftp-anonymous-login",
+      "title": "FTP server allows anonymous login",
+      "severity": "medium",
+      "host": "127.0.0.1",
+      "port": 12121,
+      "protocol": "tcp",
+      "evidence": "logged in as \"anonymous\", server replied 230 Login successful.",
+      "fix": "Disable anonymous FTP unless you really mean to share files publicly. For vsftpd set anonymous_enable=NO."
+    },
+    {
       "id": "telnet-open|127.0.0.1|12323/tcp",
       "check_id": "telnet-open",
       "title": "Unencrypted Telnet server",
@@ -32,6 +43,13 @@
         "localhost"
       ],
       "services": [
+        {
+          "port": 12121,
+          "protocol": "tcp",
+          "name": "ftp",
+          "product": "vsftpd",
+          "version": "3.0.5"
+        },
         {
           "port": 12323,
           "protocol": "tcp",
