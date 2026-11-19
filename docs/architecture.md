@@ -77,7 +77,7 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders. 
 <ul>
 <li><details><summary><code>workflows/</code> <span class="note">CI jobs. They run on every push and pull request.</span></summary>
 <ul>
-<li><code>architecture.yml</code> <span class="note">Rebuilds docs/architecture.md on every push and commits it if it changed.</span></li>
+<li><code>architecture.yml</code> <span class="note">Rebuilds docs/architecture.md on every push to master and commits it if it changed.</span></li>
 <li><code>ci.yml</code> <span class="note">Tests, lint, fuzzing, the real Nmap test and builds, on every push and pull request.</span></li>
 <li><code>docs.yml</code> <span class="note">Builds the docs website on every pull request and publishes it from the default branch.</span></li>
 </ul>
