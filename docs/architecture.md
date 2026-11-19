@@ -56,7 +56,7 @@ flowchart LR
 | `checks/ftpanon` | Checks if an FTP server lets anyone log in as "anonymous". | `internal/check`, `internal/model` |
 | `checks/httpheaders` | Checks web servers for missing security headers. | `internal/check`, `internal/model` |
 | `checks/telnet` | Flags open Telnet services. | `internal/check`, `internal/model` |
-| `cmd/nuqs` | The Nuqs vulnerability scanner. | `checks`, `internal/cli`, `internal/nmap` |
+| `cmd/nuqs` | The Nuqs vulnerability assessment tool. | `checks`, `internal/cli`, `internal/nmap` |
 | `internal/check` | Defines what a check is. | `internal/model` |
 | `internal/cli` | The "nuqs" command line. | `internal/check`, `internal/engine`, `internal/nmap`, `internal/output`, `internal/target` |
 | `internal/engine` | Runs a scan from start to end. | `internal/check`, `internal/model` |
@@ -110,7 +110,7 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders. 
 </details></li>
 <li><details><summary><code>cmd/</code> <span class="note">Programs you can run. Each folder here is one binary.</span></summary>
 <ul>
-<li><details><summary><code>nuqs/</code> <span class="note">The Nuqs vulnerability scanner.</span></summary>
+<li><details><summary><code>nuqs/</code> <span class="note">The Nuqs vulnerability assessment tool.</span></summary>
 <ul>
 <li><code>main.go</code></li>
 </ul>
