@@ -12,9 +12,11 @@ on:
 permissions:
   contents: read
 
+# One run at a time per branch. A new push to a PR cancels its older run,
+# but publishing from master is never cancelled halfway.
 concurrency:
-  group: pages
-  cancel-in-progress: true
+  group: docs-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   build:
