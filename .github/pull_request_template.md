@@ -17,3 +17,7 @@ Closes #
 - [ ] Every new file starts with a one-line description
 - [ ] Docs updated if behaviour changed
 - [ ] New check? Read-only, limits reads, respects ctx, added to `checks/checks.go` (see [Writing a check](https://nuqs-org.github.io/nuqs/writing-a-check/))
+
+## Also
+
+<!-- any additional info -->
