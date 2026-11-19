@@ -197,6 +197,7 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders. 
 <li><code>.golangci.yml</code> <span class="note">Lint settings.</span></li>
 <li><code>LICENSE</code></li>
 <li><code>README.md</code> <span class="note">The front page of the repo: what Nuqs is and how to start.</span></li>
+<li><code>SECURITY.md</code> <span class="note">How to report a security problem in Nuqs.</span></li>
 <li><code>go.mod</code> <span class="note">The Go module for Nuqs.</span></li>
 <li><code>mkdocs.yml</code> <span class="note">Settings for the docs website (MkDocs Material).</span></li>
 </ul>
