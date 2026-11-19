@@ -2,7 +2,12 @@
 
 # Roadmap (16 Nov 2026 to 16 Mar 2027)
 
-Four months, 17 weeks. Each week is packed on purpose, we'd rather cut a stretch item than finish early.
+Two parts:
+
+- **FYP-I (16 Nov to 5 Dec):** a working app with complete documentation, shown at the presentation and open house in the first week of December.
+- **FYP-II (7 Dec to 16 Mar):** the full product, complete, bug-free and scalable.
+
+Each week is packed on purpose, we'd rather cut a stretch item than finish early.
 
 Every week follows the same rules:
 
@@ -12,6 +17,8 @@ Every week follows the same rules:
 - Friday: a 10 minute demo to each other of what works now.
 - If a week slips, we cut the stretch items of that week first, we don't push the whole plan back.
 
+Who owns what: **core and CLI** (engine, checks, storage, data), **API and UI** (`nuqs serve` and the web UI).
+
 What's already done is in [What's done](progress.md).
 
 ---
@@ -20,12 +27,12 @@ What's already done is in [What's done](progress.md).
 
 | Week | Dates | What we build |
 |---|---|---|
-| W1 | 16 to 22 Nov | Setup, test lab, version comparison, 5 checks |
-| W2 | 23 to 29 Nov | Saving scans, history, diffs, CI exit codes |
-| W3 | 30 Nov to 6 Dec | Host inventory and all vulnerability data feeds |
-| W4 | 7 to 13 Dec | Advisory matching, retro-scan, fix-first, signed feed |
-| W5 | 14 to 20 Dec | REST API, live progress, shared tools layer, MCP server |
-| W6 | 21 to 27 Dec | The whole web UI |
+| W1 | 16 to 22 Nov | Setup, test lab, version comparison, confidence, 5 checks, UI design |
+| W2 | 23 to 29 Nov | Saving scans, history, diffs, first API and web UI, design docs |
+| W3 | 30 Nov to 5 Dec | **FYP-I:** docs finished, hosted demo, poster, presentation and open house |
+| W4 | 7 to 13 Dec | Host inventory and all vulnerability data feeds |
+| W5 | 14 to 20 Dec | Advisory matching, retro-scan, fix-first, signed feed |
+| W6 | 21 to 27 Dec | Full API, live progress, MCP server, full web UI |
 | W7 | 28 Dec to 3 Jan | SSH logged-in scanning and the credential check |
 | W8 | 4 to 10 Jan | YAML checks, CVE bot, Nuclei import, **mid-point demo** |
 | W9 | 11 to 17 Jan | Defence model and verifier model |
@@ -35,13 +42,13 @@ What's already done is in [What's done](progress.md).
 | W13 | 8 to 14 Feb | Speed: big networks, smart scheduling, benchmark against Nessus |
 | W14 | 15 to 21 Feb | Packaging: releases, Docker, Homebrew, installer |
 | W15 | 22 to 28 Feb | Security review of Nuqs itself |
-| W16 | 1 to 7 Mar | Real users, fixes from their feedback, thesis results |
+| W16 | 1 to 7 Mar | Real users, fixes from their feedback, FYP-II docs |
 | W17 | 8 to 14 Mar | Freeze, v1.0, demo |
 | Buffer | 15 to 16 Mar | Final submission |
 
 ## Checks quota
 
-At least **5 new checks every week** from W1 to W14, so we end with **70+ built-in checks**, plus everything from advisory data (W4), Nuclei templates (W8) and the CVE bot (W8). Ideas, roughly in order:
+At least **5 new checks every week** from W1 to W14 (except W3, the FYP-I week), so we end with **65+ built-in checks**, plus everything from advisory data (W5), Nuclei templates (W8) and the CVE bot (W8). Ideas, roughly in order:
 
 | Area | Checks |
 |---|---|
@@ -54,27 +61,56 @@ At least **5 new checks every week** from W1 to W14, so we end with **70+ built-
 
 ---
 
-## Month 1: a solid base and knowing about vulnerabilities
+## What FYP-I needs (5 Dec)
+
+What the FYP committee asked for, and where each part lives.
+
+| Requirement | Where |
+|---|---|
+| Complete in functionality (not yet product-ready) | the demo: scan, findings, fix, rescan, diff, all from the browser |
+| Background | `docs/report/background.md` |
+| Survey of the 5 most relevant projects | `docs/report/survey.md`: Nessus, OpenVAS (Greenbone), Nuclei, Vuls, Rapid7 InsightVM |
+| Scope | `docs/report/scope.md` |
+| Functional specifications | `docs/report/functional-spec.md` |
+| Architecture | [Architecture](architecture.md) (generated) plus `docs/how-it-works.md` |
+| UI design | `docs/report/ui-design.md` with wireframes and screenshots |
+| High-level design | `docs/report/high-level-design.md` |
+| Detail design, with the pipeline | `docs/report/detailed-design.md` |
+| Test cases (AI drafts are fine, we review and finalize them by hand) | `docs/report/test-cases.md` |
+| Repo owned by the project email, with collaborators | `fyp26_nuqs@gmail.com` owns `nuqs-org`. Collaborators: the team, the advisor, `undergradoffice.fos@itu.edu.pk` |
+| Industry-standard repo layout | Go's standard layout: `cmd/` (binaries), `internal/` and `checks/` (source), `docs/`. Written down in [Decisions](design/decisions.md). |
+| Hosted on the cloud | demo server on Azure, docs on GitHub Pages |
+| The Missing Semester, applied and shown | `docs/report/missing-semester.md`: where each lecture shows up in Nuqs |
+
+The docs site exports to one PDF for submission.
+
+---
+
+## FYP-I: a working app with complete docs
 
 ### W1 (16 to 22 Nov): setup, test lab, version comparison, 5 checks
 
-**Goal:** everyone ships code, and we can test against real vulnerable software.
+**Goal:** everyone ships code, we can test against real vulnerable software, and the first docs are written.
 
-- [ ] Repo on `nuqs-org/nuqs`, GitHub Pages on (Settings, Pages, Source: GitHub Actions), default branch protected, license added (Apache 2.0 suggested)
+- [x] Repo on `nuqs-org/nuqs`, license added (Apache 2.0)
+- [ ] GitHub Pages on (Settings, Pages, Source: GitHub Actions), default branch protected
+- [ ] Project email `fyp26_nuqs@gmail.com` made, its GitHub account owns `nuqs-org`, advisor and `undergradoffice.fos@itu.edu.pk` added as collaborators
 - [ ] Every teammate builds Nuqs, scans their own router, and merges one PR
-- [ ] Split ownership: engine and checks, data and storage, API and UI
 - [ ] **Test lab:** `lab/docker-compose.yml` with real services: vsftpd with anonymous login, a Telnet server, nginx without headers, an old OpenSSH, a TLS 1.0 server, Redis and MongoDB with no login
 - [ ] Lab CI job: scan the lab, the result must match a saved expected report exactly
 - [ ] `internal/version`: compare versions like each ecosystem does (semver, Debian, RPM, OpenSSH style `9.6p1`)
 - [ ] `confidence` on every finding: `confirmed` (we proved it) or `inferred` (from the version)
 - [ ] 5 checks: `tls-deprecated-protocols`, `ssh-password-auth`, `ssh-weak-algorithms`, `redis-no-auth`, `mongodb-no-auth`
+- [ ] **API and UI:** wireframes for every page (new scan, live scan, results, finding detail, history, diff)
+- [ ] **Docs:** background, survey, scope
+- [ ] Everyone starts [The Missing Semester](https://missing.csail.mit.edu/) (finish by 3 Dec)
 
 **Tests:** fake-server tests for each check, lab test for each check, big table tests and a fuzz test for version comparison (it must be consistent: if a < b then b > a).
-**Done when:** the lab scan finds exactly the expected problems in CI, and everyone has merged a PR.
+**Done when:** the lab scan finds exactly the expected problems in CI, everyone has merged a PR, and the wireframes are agreed.
 
-### W2 (23 to 29 Nov): saving scans, history, diffs, CI exit codes
+### W2 (23 to 29 Nov): saving scans, history, diffs, first API and web UI
 
-**Goal:** scans are saved and every scan shows what changed.
+**Goal:** scans are saved, every scan shows what changed, and it all works from the browser.
 
 - [ ] SQLite with `modernc.org/sqlite` (pure Go, our first dependency, reason written in [Decisions](design/decisions.md))
 - [ ] `internal/store`: scan runs, hosts, services, findings, check errors, simple numbered migrations
@@ -82,13 +118,35 @@ At least **5 new checks every week** from W1 to W14, so we end with **70+ built-
 - [ ] Compare runs with stable finding IDs: **new**, **fixed**, **still open**, plus `first_seen` and `last_seen`
 - [ ] `nuqs diff <old> <new>`, and a short "since last scan" summary after every scan
 - [ ] `--fail-on high` exits with code 3 when there's a finding at or above that level
-- [ ] Retention setting: keep the last N runs per target
+- [ ] **First API:** `nuqs serve` with start a scan, scan status, history, results, diff, a login token, and **allowed targets** (it refuses to scan anything else)
+- [ ] **First web UI** on top of it, embedded in the binary: new scan, results, finding detail (evidence, confidence, fix), history, diff
 - [ ] 5 checks: `openssh-vulnerable-version`, `elasticsearch-no-auth`, `memcached-exposed`, `http-directory-listing`, `tls-certificate-problems` (expired, self-signed, wrong name)
+- [ ] **Docs:** functional specs, high-level design, detail design with the scan pipeline, UI design
+- [ ] Stretch: known CVEs for the lab's old OpenSSH, as a preview of W5
 
-**Tests:** store tests on a temp database, migrations from empty and from every older version, save and load must give the same report, diff cases (no change, all fixed, all new, mixed, host gone), exit code tests.
-**Done when:** fixing a problem in the lab and scanning again shows it as "fixed".
+**Tests:** store tests on a temp database, migrations from empty, save and load must give the same report, diff cases (no change, all fixed, all new, mixed, host gone), exit code tests, every endpoint with `httptest` (good input, bad input, no token, target not allowed).
+**Done when:** fixing a problem in the lab and scanning again from the browser shows it as "fixed".
 
-### W3 (30 Nov to 6 Dec): host inventory and all vulnerability data feeds
+### W3 (30 Nov to 5 Dec): FYP-I presentation and open house
+
+**Goal:** a polished demo, complete docs, nothing new.
+
+- [ ] Feature freeze on Tuesday 1 Dec, only fixes after that
+- [ ] **Hosted demo:** `nuqs serve` and the lab on an Azure VM (student credit), login on, allowed targets set to the lab only
+- [ ] **Docs:** test cases written and reviewed by hand, every page proofread, exported to one PDF
+- [ ] Repo layout decision written down, README and docs screenshots updated
+- [ ] **Missing Semester page:** shell scripts, Git workflow (branches, PRs, protected `master`), a `Makefile` for build, test, lint and docs, CI, profiling with `pprof`, `jq` on the JSON output, checksums
+- [ ] Open house poster
+- [ ] Demo script, rehearsed three times
+- [ ] Tag `v0.1.0`
+
+**Done when:** the hosted demo runs scan, fix, rescan and diff three times in a row, and the PDF has every section in the table above.
+
+---
+
+## FYP-II: the full product
+
+### W4 (7 to 13 Dec): host inventory and all vulnerability data feeds
 
 **Goal:** a clean list of what runs where, and a local copy of all the vulnerability data we need.
 
@@ -97,12 +155,13 @@ At least **5 new checks every week** from W1 to W14, so we end with **70+ built-
 - [ ] `nuqs update` downloads and stores: **OSV** (Debian, Ubuntu, Alpine, Red Hat and more), **CISA KEV**, **EPSS**, and the official **CVE list** (cvelistV5)
 - [ ] Only download what changed, keep the last good copy if a download fails or is corrupt
 - [ ] `nuqs update --status` shows how fresh each source is
+- [ ] Retention setting: keep the last N runs per target
 - [ ] 5 checks: `dns-open-resolver`, `snmp-default-community`, `ntp-monlist`, `http-exposed-git`, `http-exposed-env`
 
 **Tests:** mapping tests on real Nmap XML from the lab, import tests for every feed on small saved samples (no network in tests), a corrupt download must never damage the existing data.
 **Done when:** every lab service has the right product and version, and `nuqs update` works both online and from saved files.
 
-### W4 (7 to 13 Dec): advisory matching, retro-scan, fix-first, signed feed
+### W5 (14 to 20 Dec): advisory matching, retro-scan, fix-first, signed feed
 
 **Goal:** our headline features work end to end.
 
@@ -116,39 +175,21 @@ At least **5 new checks every week** from W1 to W14, so we end with **70+ built-
 **Tests:** matching cases (in range, out of range, fixed exactly at the version, distro backports), a rematch test that finds a new advisory with no network, grouping tests, signature tests (one changed byte or a wrong key must be refused).
 **Done when:** adding a fake advisory for the lab's OpenSSH and running `nuqs update` flags it within seconds, grouped under its fix.
 
----
+### W6 (21 to 27 Dec): full API, live progress, MCP server, full web UI
 
-## Month 2: API, UI, logged-in scanning and AI
-
-### W5 (14 to 20 Dec): REST API, live progress, shared tools, MCP server
-
-**Goal:** everything the CLI does is available to the UI, other tools and AI assistants.
+**Goal:** everything the CLI does is available to the UI, other tools and AI assistants, and the UI is complete.
 
 - [ ] `internal/tools`: one set of safe actions (list checks, scan, get findings, get evidence, diff, update). API, MCP and the verifier all use these.
-- [ ] `nuqs serve` with `net/http`: scans, findings, diff, history, checks, update status
-- [ ] Live progress with Server-Sent Events from the engine's events
-- [ ] Token login, the token is printed on first start
+- [ ] The rest of the API: checks, update status, and live progress with Server-Sent Events from the engine's events
 - [ ] OpenAPI file, checked in CI against the real routes
-- [ ] `nuqs mcp`: MCP server with the official Go MCP SDK (second dependency, reason written down)
-- [ ] **Allowed targets** in the config. AI scans outside it are always refused, and scans ask for confirmation.
-- [ ] 5 checks: `rdp-no-nla`, `smb-signing-disabled`, `smbv1-enabled`, `nfs-open-shares`, `upnp-exposed`
-
-**Tests:** every endpoint with `httptest` (good input, bad input, no token), live progress end to end with a fake scanner, MCP tested with a test client including "scanning outside the allowed targets is always refused".
-**Done when:** a scan can be run and followed with `curl` alone, and Claude Desktop can scan the lab through `nuqs mcp`.
-
-### W6 (21 to 27 Dec): the whole web UI
-
-**Goal:** everything important can be done from the browser.
-
-- [ ] Plain HTML with htmx, embedded in the `nuqs` binary (one binary, nothing to install)
-- [ ] Pages: new scan, live scan, results, finding detail (evidence, confidence, fix), history, diff
-- [ ] **Fix-first view** as the main results screen, and a **"since last scan"** view
+- [ ] `nuqs mcp`: MCP server with the official Go MCP SDK (second dependency, reason written down). AI scans outside the allowed targets are always refused.
+- [ ] UI: live scan page, **fix-first view** as the main results screen, **"since last scan"** view
 - [ ] **Beginner mode:** one "Scan my network" button that finds the local network by itself
 - [ ] Plain-language explanation for every check, and a dark mode
-- [ ] 5 checks: `http-default-pages`, `http-admin-panels`, `tls-weak-ciphers`, `mysql-default-login`, `postgres-default-login`
+- [ ] 5 checks: `rdp-no-nla`, `smb-signing-disabled`, `smbv1-enabled`, `http-default-pages`, `tls-weak-ciphers`
 
-**Tests:** Playwright browser tests in CI: start a scan against the lab, watch it live, see findings, open a finding, compare two scans. Plus a test for local network detection.
-**Done when:** a teammate who never saw the UI scans the lab and finds the top fix without help.
+**Tests:** live progress end to end with a fake scanner, MCP tested with a test client including "scanning outside the allowed targets is always refused", Playwright browser tests in CI: start a scan against the lab, watch it live, see findings, compare two scans.
+**Done when:** a teammate who never saw the UI scans the lab and finds the top fix without help, and Claude Desktop can scan the lab through `nuqs mcp`.
 
 ### W7 (28 Dec to 3 Jan): SSH logged-in scanning and the credential check
 
@@ -183,7 +224,7 @@ At least **5 new checks every week** from W1 to W14, so we end with **70+ built-
 
 - [ ] Model setup: local Ollama by default, or any OpenAI-compatible endpoint from the config. Nuqs works fully without a model.
 - [ ] **Defence model:** "How do I fix this?" gives exact steps for that host from the evidence, OS, version and our fix data. Marked as AI-written, never run by Nuqs.
-- [ ] **Verifier model:** "Verify" lets the AI plan extra checks with only the safe tools from W5 (version from a second source, package list over SSH, a config value, a harmless test of the vulnerable behaviour)
+- [ ] **Verifier model:** "Verify" lets the AI plan extra checks with only the safe tools from W6 (version from a second source, package list over SSH, a config value, a harmless test of the vulnerable behaviour)
 - [ ] **The AI is never the proof.** A finding becomes "confirmed" only when a tool returns hard evidence. Every step is saved and shown.
 - [ ] Limits: only on a click, one host and port, read-only, step and time limits, allowed targets
 - [ ] Both available in the UI, the API and MCP
@@ -284,7 +325,7 @@ At least **5 new checks every week** from W1 to W14, so we end with **70+ built-
 **Tests:** one test per item in the threat model.
 **Done when:** the threat model has no open items marked high.
 
-### W16 (1 to 7 Mar): real users and thesis results
+### W16 (1 to 7 Mar): real users, thesis results and FYP-II docs
 
 **Goal:** prove it's easy and useful for people who aren't us.
 
@@ -292,6 +333,7 @@ At least **5 new checks every week** from W1 to W14, so we end with **70+ built-
 - [ ] Record where they get stuck, fix the top 10 problems
 - [ ] Final numbers for the thesis: speed, accuracy, false positives before and after verifying, checks count, test coverage
 - [ ] Thesis chapters on design, testing and results
+- [ ] **FYP-II docs:** every FYP-I section updated to the final product, plus implementation notes, notes on AI use in each part of the work, and AI automated testing results
 
 **Done when:** every user finished the task list, and the top problems are fixed.
 

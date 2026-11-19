@@ -1,6 +1,6 @@
 # What's done
 
-Last updated 17 Nov 2026.
+Last updated 19 Nov 2026.
 
 ## Research: how Nessus works
 
@@ -24,6 +24,7 @@ All of this lives in the [nessus-dissection](https://github.com/PremadeS/nessus-
 - [x] 4-month [roadmap](roadmap.md), tightened so each week does a lot more
 - [x] Web UI served by the binary, no Qt desktop app (see [Decisions](design/decisions.md))
 - [x] Repo moved to [nuqs-org/nuqs](https://github.com/nuqs-org/nuqs), with all commits kept
+- [x] Roadmap split into FYP-I (presentation and open house on 5 Dec) and FYP-II
 
 ## Nuqs core (milestone 0)
 
@@ -45,4 +46,4 @@ All of this lives in the [nessus-dissection](https://github.com/PremadeS/nessus-
 
 ## Next
 
-Week 1 of the [roadmap](roadmap.md): turn on GitHub Pages, protect the default branch, pick a license, build the test lab, add version comparison and the first 5 new checks.
+Week 1 of the [roadmap](roadmap.md): version comparison, confidence on findings, the test lab, 5 checks, UI wireframes, and the first docs (background, survey, scope). Everything builds towards the FYP-I presentation on 5 Dec.
