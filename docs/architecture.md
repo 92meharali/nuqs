@@ -24,6 +24,7 @@ flowchart LR
     n_internal_nmap["internal/nmap"]
     n_internal_output["internal/output"]
     n_internal_target["internal/target"]
+    n_internal_version["internal/version"]
   end
   subgraph n_g_tools ["tools"]
     n_tools_apidocs["tools/apidocs"]
@@ -64,6 +65,7 @@ flowchart LR
 | `internal/nmap` | Runs Nmap and turns its XML output into model.Host values. | `internal/model` |
 | `internal/output` | Prints a scan report, either as a table for people or as JSON for tools. | `internal/engine` |
 | `internal/target` | Checks what the user asked us to scan before it ever reaches Nmap. | nothing else in Nuqs |
+| `internal/version` | Compares software versions the way each ecosystem does. | nothing else in Nuqs |
 | `tools/apidocs` | Writes the API reference pages of the website, one page per package, from the doc comments in the code. | nothing else in Nuqs |
 | `tools/archdiagram` | Writes docs/architecture.md, a diagram and a map of the repo built straight from the code. | nothing else in Nuqs |
 
@@ -162,6 +164,21 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders. 
 <ul>
 <li><code>target.go</code></li>
 <li><code>target_test.go</code> <span class="note">Tests target parsing and the safety limit, and fuzzes it with random input.</span></li>
+</ul>
+</details></li>
+<li><details><summary><code>version/</code> <span class="note">Compares software versions the way each ecosystem does.</span></summary>
+<ul>
+<li><code>debian.go</code> <span class="note">Debian and Ubuntu package versions, compared like dpkg does.</span></li>
+<li><code>debian_test.go</code> <span class="note">Test cases for Debian versions.</span></li>
+<li><code>helpers.go</code> <span class="note">Small helpers shared by the schemes.</span></li>
+<li><code>openssh.go</code> <span class="note">OpenSSH versions like 9.6p1, as banners and Nmap show them.</span></li>
+<li><code>openssh_test.go</code> <span class="note">Test cases for OpenSSH versions.</span></li>
+<li><code>rpm.go</code> <span class="note">Red Hat, Fedora, SUSE and other RPM package versions, compared like rpm does.</span></li>
+<li><code>rpm_test.go</code> <span class="note">Test cases for RPM versions.</span></li>
+<li><code>semver.go</code> <span class="note">Semantic versioning, like 1.2.3 and 1.0.0-rc.1.</span></li>
+<li><code>semver_test.go</code> <span class="note">Test cases for semver.</span></li>
+<li><code>version.go</code></li>
+<li><code>version_test.go</code> <span class="note">Tests shared by every scheme: ordering, bad input, lookup and a fuzz test.</span></li>
 </ul>
 </details></li>
 </ul>
