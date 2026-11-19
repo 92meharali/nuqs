@@ -3,11 +3,11 @@
 ## The flow
 
 1. Pick a task from the [roadmap](roadmap.md) and open an issue (or comment on one) so nobody does it twice.
-2. Make a branch from `main`, like `feat/redis-check` or `fix/ftp-timeout`.
+2. Make a branch from `master`, like `feat/redis-check` or `fix/ftp-timeout`.
 3. Write the code **and** the tests **and** the doc comments.
 4. Run `go test -race ./...` and `golangci-lint run` before pushing.
-5. Open a PR. Keep it small, one thing per PR.
-6. One teammate reviews it. CI must be green before merging.
+5. Open a PR. Keep it small, one thing per PR. Fill in the **test plan**: what to run and what the reviewer should see.
+6. One teammate reviews it by following the test plan. CI must be green before merging.
 
 ## Keep it simple
 

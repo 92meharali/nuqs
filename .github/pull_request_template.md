@@ -6,9 +6,20 @@
 
 Closes #
 
-## How to try it
+## Test plan
 
-<!-- A command or two, like: go test ./internal/version -->
+<!-- Steps a reviewer can follow. For each one, what to run and what they should see. -->
+
+1. Run:
+   ```bash
+   go test ./...
+   ```
+   Expect: every package `ok`.
+2. Run:
+   ```bash
+
+   ```
+   Expect:
 
 ## Checklist
 
