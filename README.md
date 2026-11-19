@@ -1,15 +1,34 @@
 <!-- The front page of the repo: what Nuqs is and how to start. -->
 
-# Nuqs
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-light.svg">
+    <img src="docs/assets/logo.svg" width="88" alt="Nuqs logo">
+  </picture>
+</p>
 
-[![CI](https://github.com/nuqs-org/nuqs/actions/workflows/ci.yml/badge.svg)](https://github.com/nuqs-org/nuqs/actions/workflows/ci.yml)
-[![Docs](https://github.com/nuqs-org/nuqs/actions/workflows/docs.yml/badge.svg)](https://nuqs-org.github.io/nuqs/)
+<h1 align="center">Nuqs</h1>
 
-A simple, open-source network vulnerability scanner built on Nmap. Our final year project, aiming to be a simpler and more trustworthy alternative to Nessus.
+<p align="center">
+  A simple, open-source network vulnerability scanner built on Nmap.<br>
+  Our final year project, aiming to be a simpler and more trustworthy alternative to Nessus.
+</p>
 
-**Docs:** https://nuqs-org.github.io/nuqs/
+<p align="center">
+  <a href="https://github.com/nuqs-org/nuqs/actions/workflows/ci.yml"><img src="https://github.com/nuqs-org/nuqs/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://nuqs-org.github.io/nuqs/"><img src="https://github.com/nuqs-org/nuqs/actions/workflows/docs.yml/badge.svg" alt="Docs"></a>
+  <img src="https://img.shields.io/github/go-mod/go-version/nuqs-org/nuqs" alt="Go version">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue" alt="License"></a>
+</p>
 
-**Chat:** https://nuqs.duckdns.org (Mattermost)
+<p align="center">
+  <a href="https://nuqs-org.github.io/nuqs/"><b>Docs</b></a> ·
+  <a href="#quick-start"><b>Quick start</b></a> ·
+  <a href="docs/roadmap.md"><b>Roadmap</b></a> ·
+  <a href="https://nuqs.duckdns.org"><b>Chat</b></a>
+</p>
+
+---
 
 ## Quick start
 
@@ -21,11 +40,10 @@ go build -o nuqs ./cmd/nuqs
 ./nuqs scan --json -p 21,23,80,443 192.168.1.0/24 > report.json
 ```
 
-Only scan networks you own or have permission to scan.
+> [!IMPORTANT]
+> Only scan networks you own or have permission to scan.
 
 ## What's here
-
-The full, always up to date map (diagram plus every file) is in [docs/architecture.md](docs/architecture.md). It's rebuilt from the code on every push.
 
 | Folder | What |
 |---|---|
@@ -34,6 +52,8 @@ The full, always up to date map (diagram plus every file) is in [docs/architectu
 | `checks/` | built-in checks, one folder each |
 | `test/integration` | full scan test with the real Nmap |
 | `docs/` | the website, including the [roadmap](docs/roadmap.md) and [what's done](docs/progress.md) |
+
+The full map (diagram plus every file) is in [docs/architecture.md](docs/architecture.md). It's rebuilt from the code on every push.
 
 ## Develop
 
@@ -45,8 +65,12 @@ go run ./tools/archdiagram                           # rebuild the architecture 
 ./scripts/docs.sh                                    # docs website at http://127.0.0.1:8000 (installs what it needs)
 ```
 
-Adding a check? See [Writing a check](docs/writing-a-check.md). Everything else: [Contributing](docs/contributing.md).
+Adding a check? See [Writing a check](docs/writing-a-check.md). Everything else: [Contributing](docs/contributing.md). Found a security bug? See [Security](SECURITY.md).
 
 ## Research
 
 How Nessus works under the hood, measured and written up before we started: [PremadeS/nessus-dissection](https://github.com/PremadeS/nessus-dissection).
+
+---
+
+<p align="center"><sub>Apache 2.0 · Made by the Nuqs team</sub></p>

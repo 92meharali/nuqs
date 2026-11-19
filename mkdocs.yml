@@ -9,6 +9,8 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
+  logo: assets/logo-light.svg
+  favicon: assets/logo.svg
   features:
     - navigation.sections
     - navigation.top
