@@ -2,6 +2,7 @@
 //
 // It sends a harmless PING command without credentials. If the server replies
 // with +PONG, unauthenticated access is possible. If it replies with -NOAUTH,
+// -DENIED (protected mode), or an -ERR containing "authentication required",
 // the server requires authentication and is not vulnerable.
 package redisnoauth
 
@@ -74,7 +75,7 @@ func (Check) Run(ctx context.Context, t check.Target) (*check.Result, error) {
 	if reply == "+PONG" {
 		return &check.Result{Evidence: "sent PING without a password and got +PONG"}, nil
 	}
-	if strings.HasPrefix(reply, "-NOAUTH") || strings.Contains(strings.ToLower(reply), "authentication required") {
+	if strings.HasPrefix(reply, "-NOAUTH") || strings.HasPrefix(reply, "-DENIED") || strings.Contains(strings.ToLower(reply), "authentication required") || strings.Contains(strings.ToLower(reply), "protected mode") {
 		return nil, nil // server requires a password, no finding
 	}
 

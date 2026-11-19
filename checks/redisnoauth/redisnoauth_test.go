@@ -145,6 +145,7 @@ func TestNegative(t *testing.T) {
 		"standard noauth":   "-NOAUTH Authentication required.\r\n",
 		"bare noauth":       "-NOAUTH\r\n",
 		"auth required err": "-ERR operation not permitted, authentication required\r\n",
+		"protected mode":    "-DENIED Redis is running in protected mode\r\n",
 	}
 	for name, reply := range cases {
 		t.Run(name, func(t *testing.T) {
