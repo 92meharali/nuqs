@@ -2,14 +2,14 @@
   "errors": [],
   "findings": [
     {
-      "id": "http-security-headers|127.0.0.1|8080/tcp",
+      "id": "http-security-headers|127.0.0.1|18080/tcp",
       "check_id": "http-security-headers",
       "title": "Web server is missing security headers",
       "severity": "low",
       "host": "127.0.0.1",
-      "port": 8080,
+      "port": 18080,
       "protocol": "tcp",
-      "evidence": "GET http://127.0.0.1:8080/ returned 200 without these headers: Content-Security-Policy, X-Content-Type-Options, X-Frame-Options",
+      "evidence": "GET http://127.0.0.1:18080/ returned 200 without these headers: Content-Security-Policy, X-Content-Type-Options, X-Frame-Options",
       "fix": "Configure the web server to send the missing headers. Most servers can add them in one line of config."
     }
   ],
@@ -17,11 +17,16 @@
   "hosts": [
     {
       "address": "127.0.0.1",
+      "hostnames": [
+        "localhost"
+      ],
       "services": [
         {
-          "port": 8080,
+          "port": 18080,
           "protocol": "tcp",
-          "name": "http"
+          "name": "http",
+          "product": "nginx",
+          "version": "1.30.7"
         }
       ]
     }

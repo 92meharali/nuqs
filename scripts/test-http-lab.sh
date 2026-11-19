@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# Checks the Compose HTTP fixture and the saved Telnet and FTPS inventories.
+# Builds Nuqs and compares its report for the local nginx service with the golden file.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+workdir=$(mktemp -d)
 compose=(docker compose -f lab/docker-compose.yml -p "nuqs-http-lab-$$")
-trap '"${compose[@]}" down' EXIT
+cleanup() {
+  "${compose[@]}" down
+  rm -r -- "$workdir"
+}
+trap cleanup EXIT
+go build -o "$workdir/nuqs" ./cmd/nuqs
 "${compose[@]}" up -d --wait --wait-timeout 60
-address=$("${compose[@]}" port web 8080)
-if [[ ! $address =~ ^127\.0\.0\.1:([1-9][0-9]*)$ ]]; then
-  echo "Unexpected HTTP fixture address: $address" >&2
-  exit 1
-fi
-go test -count=1 -v ./internal/cli -run '^Test(HTTP|Telnet|FTPS)Report$' -http-lab-port="${BASH_REMATCH[1]}"
+"$workdir/nuqs" scan --json -Pn -p 18080 127.0.0.1 > "$workdir/report.json"
+go run ./lab < "$workdir/report.json" > "$workdir/normalized.json"
+diff -u lab/expected-report.json "$workdir/normalized.json"
+echo "nginx report matches lab/expected-report.json"

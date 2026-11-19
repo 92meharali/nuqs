@@ -86,7 +86,7 @@ jobs:
         run: go test -tags integration -v -count=1 ./test/integration
 
   http-lab:
-    name: HTTP, Telnet and FTPS lab reports
+    name: nginx lab report (real Nmap and CLI)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -94,6 +94,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Install Nmap
+        run: sudo apt-get update && sudo apt-get install -y nmap
       - run: ./scripts/test-http-lab.sh
 
   build:

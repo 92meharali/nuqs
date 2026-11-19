@@ -1,14 +1,18 @@
-# Serves one static page for the HTTP response header report test.
+# Serves the pinned nginx page for the end-to-end report test.
 services:
   web:
-    image: busybox:1.37.0@sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec
-    command: ["httpd", "-f", "-p", "8080", "-h", "/www"]
+    image: nginx:stable-alpine@sha256:3bc3836dc0be3b811f238210360bf8e7ca8a2d0effdae46160bf1f3578710051
+    entrypoint: ["nginx", "-g", "daemon off;"]
     user: "65534:65534"
     read_only: true
+    cap_drop: [ALL]
+    tmpfs:
+      - /tmp
     volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./index.html:/www/index.html:ro
     ports:
-      - "127.0.0.1::8080"
+      - "127.0.0.1:18080:8080"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
       interval: 1s

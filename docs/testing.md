@@ -22,27 +22,19 @@ go test -tags integration -v ./test/integration
 
 It skips itself if Nmap isn't installed. CI always runs it.
 
-## Lab reports
+## End-to-end lab report
 
-With Docker Compose running, run `./scripts/test-http-lab.sh`. The job compares
-three CLI reports against the saved `*-report.json` files in
-`internal/cli/testdata/`.
+With Go, Nmap and Docker Compose installed, run `./scripts/test-http-lab.sh`.
+It builds the Nuqs binary, starts nginx on `127.0.0.1:18080`, waits for its
+static page, and runs the binary against that port. Keep port 18080 free for
+this test. Nuqs uses Nmap to discover the service and selects its checks from
+the built-in registry.
 
-| Case | Input | Expected report |
-|---|---|---|
-| HTTP | A static page from a disposable container | One low-severity finding listing the missing headers |
-| Telnet | A saved inventory with two Telnet ports, one open and one closed | One medium-severity finding on the open port (2323/tcp) |
-| FTP over TLS | A saved inventory describing an encrypted FTP service | Zero findings and one check error explaining that FTP over TLS is unsupported |
-
-Each case uses a saved Nmap inventory and the corresponding built-in check.
-Only the HTTP case contacts a service. Compose assigns a temporary loopback
-port and the script removes the container on exit. The integration test above
-covers live discovery.
-
-The test validates the report timestamps and gives them fixed values before
-comparing the complete JSON. Review expected report changes alongside the
-changes that caused them. All three comparisons also run in `go test ./...`,
-which uses an in-process HTTP fixture.
+Expect one HTTP header finding, no check errors, and a message confirming the
+report matches `lab/expected-report.json`. The comparison validates the scan
+timestamps and substitutes two fixed values. Changes to the inventory,
+findings or errors produce a unified diff. Review that diff before updating
+the expected report. The script removes the lab container on exit.
 
 ## Fuzz tests
 
@@ -67,7 +59,7 @@ Every push and PR runs:
 | Coverage | total coverage drops below **85%** |
 | Fuzz (short) | a fuzz target crashes in 30 seconds |
 | Integration | the real Nmap scan doesn't find what it should |
-| Lab reports | an HTTP, Telnet or FTPS report differs from its expected JSON |
+| Lab report | the built CLI’s report for nginx differs from the saved JSON |
 | Build | the binary doesn't build or `nuqs version` fails |
 | govulncheck | a known vulnerability affects our code or Go version |
 | Docs | the website doesn't build (broken links and so on) |
