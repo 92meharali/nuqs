@@ -37,6 +37,10 @@ nav:
   - Writing a check: writing-a-check.md
   - Testing: testing.md
   - Contributing: contributing.md
+  - Web UI:
+      - Overview: ui/index.md
+      - Pages: ui/pages.md
+      - How we build it: ui/building.md
   - Plan:
       - Roadmap (4 months): roadmap.md
       - What's done: progress.md
