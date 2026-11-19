@@ -25,16 +25,16 @@ It skips itself if Nmap isn't installed. CI always runs it.
 ## End-to-end lab report
 
 With Go, Nmap and Docker Compose installed, run `./scripts/test-http-lab.sh`.
-It builds the Nuqs binary, starts nginx on `127.0.0.1:18080`, waits for its
-static page, and runs the binary against that port. Keep port 18080 free for
-this test. Nuqs uses Nmap to discover the service and selects its checks from
-the built-in registry.
+It builds Nuqs, starts nginx and BusyBox telnetd, and waits for both services
+to be ready. Keep loopback ports 18080 and 12323 free. The Telnet daemon
+negotiates the protocol and closes each session without starting a shell.
+Nuqs runs Nmap against both ports and selects checks from its built-in registry.
 
-Expect one HTTP header finding, no check errors, and a message confirming the
-report matches `lab/expected-report.json`. The comparison validates the scan
+Expect one medium Telnet finding, one low HTTP header finding, zero check
+errors, and a match with `lab/expected-report.json`. The comparison validates the scan
 timestamps and substitutes two fixed values. Changes to the inventory,
 findings or errors produce a unified diff. Review that diff before updating
-the expected report. The script removes the lab container on exit.
+the expected report. The script removes the lab containers on exit.
 
 ## Fuzz tests
 
@@ -59,7 +59,7 @@ Every push and PR runs:
 | Coverage | total coverage drops below **85%** |
 | Fuzz (short) | a fuzz target crashes in 30 seconds |
 | Integration | the real Nmap scan doesn't find what it should |
-| Lab report | the built CLI’s report for nginx differs from the saved JSON |
+| Lab report | the built CLI’s report for the lab differs from the saved JSON |
 | Build | the binary doesn't build or `nuqs version` fails |
 | govulncheck | a known vulnerability affects our code or Go version |
 | Docs | the website doesn't build (broken links and so on) |

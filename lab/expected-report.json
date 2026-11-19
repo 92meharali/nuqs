@@ -2,6 +2,17 @@
   "errors": [],
   "findings": [
     {
+      "id": "telnet-open|127.0.0.1|12323/tcp",
+      "check_id": "telnet-open",
+      "title": "Unencrypted Telnet server",
+      "severity": "medium",
+      "host": "127.0.0.1",
+      "port": 12323,
+      "protocol": "tcp",
+      "evidence": "port 12323/tcp is open and Nmap identified it as a Telnet server",
+      "fix": "Turn off Telnet and use SSH instead. Telnet sends passwords as plain text, so anyone on the network can read them."
+    },
+    {
       "id": "http-security-headers|127.0.0.1|18080/tcp",
       "check_id": "http-security-headers",
       "title": "Web server is missing security headers",
@@ -21,6 +32,11 @@
         "localhost"
       ],
       "services": [
+        {
+          "port": 12323,
+          "protocol": "tcp",
+          "name": "telnet"
+        },
         {
           "port": 18080,
           "protocol": "tcp",
