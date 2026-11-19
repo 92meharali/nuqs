@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs the HTTP golden report test against a disposable local Compose service.
+# Checks the Compose HTTP fixture and the saved Telnet and FTPS inventories.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -11,4 +11,4 @@ if [[ ! $address =~ ^127\.0\.0\.1:([1-9][0-9]*)$ ]]; then
   echo "Unexpected HTTP fixture address: $address" >&2
   exit 1
 fi
-go test -count=1 -v ./internal/cli -run '^TestHTTPReport$' -http-lab-port="${BASH_REMATCH[1]}"
+go test -count=1 -v ./internal/cli -run '^Test(HTTP|Telnet|FTPS)Report$' -http-lab-port="${BASH_REMATCH[1]}"

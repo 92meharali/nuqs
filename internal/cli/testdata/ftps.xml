@@ -1,0 +1,13 @@
+<!-- The FTP check reports incomplete coverage when the service requires TLS. -->
+<nmaprun>
+  <host>
+    <status state="up"/>
+    <address addr="127.0.0.1" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="990">
+        <state state="open"/>
+        <service name="ftp" tunnel="ssl"/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>

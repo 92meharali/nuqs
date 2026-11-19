@@ -1,0 +1,17 @@
+<!-- The same inventory contains an open Telnet service and a closed Telnet port. -->
+<nmaprun>
+  <host>
+    <status state="up"/>
+    <address addr="127.0.0.1" addrtype="ipv4"/>
+    <ports>
+      <port protocol="tcp" portid="23">
+        <state state="closed"/>
+        <service name="telnet"/>
+      </port>
+      <port protocol="tcp" portid="2323">
+        <state state="open"/>
+        <service name="telnet" product="BusyBox telnetd"/>
+      </port>
+    </ports>
+  </host>
+</nmaprun>

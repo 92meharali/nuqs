@@ -1,0 +1,29 @@
+{
+  "errors": [
+    {
+      "check_id": "ftp-anonymous-login",
+      "host": "127.0.0.1",
+      "port": 990,
+      "error": "FTP over TLS isn't supported yet"
+    }
+  ],
+  "findings": [],
+  "finished": "2000-01-01T00:00:01Z",
+  "hosts": [
+    {
+      "address": "127.0.0.1",
+      "services": [
+        {
+          "port": 990,
+          "protocol": "tcp",
+          "name": "ftp",
+          "tunnel": "ssl"
+        }
+      ]
+    }
+  ],
+  "started": "2000-01-01T00:00:00Z",
+  "targets": [
+    "127.0.0.1"
+  ]
+}

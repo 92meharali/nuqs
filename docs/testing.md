@@ -22,23 +22,27 @@ go test -tags integration -v ./test/integration
 
 It skips itself if Nmap isn't installed. CI always runs it.
 
-## HTTP lab report
+## Lab reports
 
-With Docker Compose running, run `./scripts/test-http-lab.sh`. It serves one
-static page on a temporary loopback port, runs the CLI report test, and removes
-the container when the script exits. Expect one low-severity HTTP header
-finding and an empty error list.
+With Docker Compose running, run `./scripts/test-http-lab.sh`. The job compares
+three CLI reports against the saved `*-report.json` files in
+`internal/cli/testdata/`.
 
-The test supplies a saved Nmap inventory with one HTTP service. The header
-check reads the response from the container, and the CLI writes its JSON
-report. Using the same service address in the inventory keeps finding IDs and
-evidence reproducible. The integration test above covers live discovery.
+| Case | Input | Expected report |
+|---|---|---|
+| HTTP | A static page from a disposable container | One low-severity finding listing the missing headers |
+| Telnet | A saved inventory with two Telnet ports, one open and one closed | One medium-severity finding on the open port (2323/tcp) |
+| FTP over TLS | A saved inventory describing an encrypted FTP service | Zero findings and one check error explaining that FTP over TLS is unsupported |
 
-The expected report lives in `internal/cli/testdata/http-report.json`. The
-test validates the start and finish times and gives them fixed values for the
-comparison. Review changes to the expected JSON alongside the change that
-caused them. The same comparison runs with an in-process HTTP fixture during
-`go test ./...`.
+Each case uses a saved Nmap inventory and the corresponding built-in check.
+Only the HTTP case contacts a service. Compose assigns a temporary loopback
+port and the script removes the container on exit. The integration test above
+covers live discovery.
+
+The test validates the report timestamps and gives them fixed values before
+comparing the complete JSON. Review expected report changes alongside the
+changes that caused them. All three comparisons also run in `go test ./...`,
+which uses an in-process HTTP fixture.
 
 ## Fuzz tests
 
@@ -63,7 +67,7 @@ Every push and PR runs:
 | Coverage | total coverage drops below **85%** |
 | Fuzz (short) | a fuzz target crashes in 30 seconds |
 | Integration | the real Nmap scan doesn't find what it should |
-| HTTP lab report | the Compose fixture produces a different JSON report |
+| Lab reports | an HTTP, Telnet or FTPS report differs from its expected JSON |
 | Build | the binary doesn't build or `nuqs version` fails |
 | govulncheck | a known vulnerability affects our code or Go version |
 | Docs | the website doesn't build (broken links and so on) |

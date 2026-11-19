@@ -1,4 +1,4 @@
-// Tests the full JSON report for a single HTTP response with a saved service inventory.
+// Compares CLI reports for HTTP, Telnet and FTP over TLS with their saved JSON.
 
 package cli
 
@@ -17,7 +17,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nuqs-org/nuqs/checks/ftpanon"
 	"github.com/nuqs-org/nuqs/checks/httpheaders"
+	"github.com/nuqs-org/nuqs/checks/telnet"
 	"github.com/nuqs-org/nuqs/internal/check"
 )
 
@@ -45,12 +47,25 @@ func TestHTTPReport(t *testing.T) {
 	client := &http.Client{Transport: transport, CheckRedirect: func(*http.Request, []*http.Request) error {
 		return http.ErrUseLastResponse
 	}}
-	discovery, err := os.ReadFile("testdata/http.xml")
+	checkFixtureReport(t, "http", httpheaders.Check{Client: client})
+}
+
+func TestTelnetReport(t *testing.T) {
+	checkFixtureReport(t, "telnet", telnet.Check{})
+}
+
+func TestFTPSReport(t *testing.T) {
+	checkFixtureReport(t, "ftps", ftpanon.Check{})
+}
+
+func checkFixtureReport(t *testing.T, name string, selected check.Check) {
+	t.Helper()
+	discovery, err := os.ReadFile(filepath.Join("testdata", name+".xml"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	app, stdout, stderr := newApp(t, &fakeRunner{out: discovery})
-	app.Checks = func() []check.Check { return []check.Check{httpheaders.Check{Client: client}} }
+	app.Checks = func() []check.Check { return []check.Check{selected} }
 	if code := app.Run(t.Context(), []string{"scan", "--json", "127.0.0.1"}); code != ExitOK {
 		t.Fatalf("CLI exited %d: %s", code, stderr)
 	}
@@ -78,7 +93,7 @@ func TestHTTPReport(t *testing.T) {
 		t.Fatal(err)
 	}
 	got = append(got, '\n')
-	const golden = "testdata/http-report.json"
+	golden := filepath.Join("testdata", name+"-report.json")
 	want, err := os.ReadFile(golden)
 	if err != nil {
 		t.Fatal(err)
@@ -89,6 +104,6 @@ func TestHTTPReport(t *testing.T) {
 			t.Fatal(err)
 		}
 		diff, err := exec.Command("git", "diff", "--no-index", "--no-ext-diff", "--", golden, actual).CombinedOutput()
-		t.Fatalf("HTTP report differs from %s (%v)\n%s", golden, err, diff)
+		t.Fatalf("report differs from %s (%v)\n%s", golden, err, diff)
 	}
 }
