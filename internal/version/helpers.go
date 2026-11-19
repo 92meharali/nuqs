@@ -51,7 +51,7 @@ func splitEpoch(v string) (int, string, error) {
 		return 0, v, nil
 	}
 	n, err := strconv.Atoi(e)
-	if err != nil || n < 0 || e[0] == '+' {
+	if err != nil || !allDigits(e) {
 		return 0, "", fmt.Errorf("bad epoch in %q", v)
 	}
 	return n, rest, nil
