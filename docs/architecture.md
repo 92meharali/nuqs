@@ -82,6 +82,7 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders. 
 <li><code>docs.yml</code> <span class="note">Builds the docs website on every pull request and publishes it from the default branch.</span></li>
 </ul>
 </details></li>
+<li><code>pull_request_template.md</code> <span class="note">The template every new pull request starts with.</span></li>
 </ul>
 </details></li>
 <li><details><summary><code>checks/</code> <span class="note">Lists every check that ships with Nuqs.</span></summary>
