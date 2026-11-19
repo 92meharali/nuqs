@@ -1,6 +1,6 @@
 # Nuqs
 
-Nuqs is a simple, open-source network vulnerability scanner. It uses Nmap to find hosts and open ports, then runs small checks on each service to find real problems.
+Nuqs is a non-overengineered, open-source vulnerability assessment tool. It uses Nmap to find hosts and open ports, then runs small checks on each service to find real problems.
 
 We're building it as our final year project, as a simpler and more trustworthy alternative to Nessus.
 

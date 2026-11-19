@@ -1,4 +1,4 @@
-// Command nuqs is the Nuqs vulnerability scanner.
+// Command nuqs is the Nuqs vulnerability assessment tool.
 //
 // All the real work lives in internal/cli. This file only wires up the real
 // Nmap runner, the built-in checks and Ctrl-C handling.

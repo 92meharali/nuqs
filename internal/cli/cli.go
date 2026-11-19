@@ -37,7 +37,7 @@ type App struct {
 	Checks func() []check.Check
 }
 
-const usage = `Nuqs is a simple network vulnerability scanner.
+const usage = `Nuqs is a non-overengineered vulnerability assessment tool.
 
 Usage:
   nuqs scan [flags] <target>...   scan targets (IP, CIDR, range like 10.0.0.1-20, or hostname)

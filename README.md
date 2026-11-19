@@ -10,7 +10,7 @@
 <h1 align="center">Nuqs</h1>
 
 <p align="center">
-  A non-overengineered, open-source network vulnerability scanner built on Nmap.<br>
+  A non-overengineered, open-source vulnerability assessment tool built on Nmap.<br>
   Our final year project, aiming to be a simpler and more trustworthy alternative to Nessus.
 </p>
 
