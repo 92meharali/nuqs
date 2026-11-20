@@ -1,9 +1,9 @@
 // Package redisnoauth checks if a Redis server allows unauthenticated access.
 //
 // It sends a harmless PING command without credentials. If the server replies
-// with +PONG, unauthenticated access is possible. If it replies with -NOAUTH,
-// -DENIED (protected mode), or an -ERR containing "authentication required",
-// the server requires authentication and is not vulnerable.
+// with +PONG, unauthenticated access is possible. If it replies with -NOAUTH
+// or an -ERR containing "authentication required", it needs a password. If it
+// replies with -DENIED, it's in protected mode and only allows localhost. Either way, no finding.
 package redisnoauth
 
 import (
@@ -76,7 +76,7 @@ func (Check) Run(ctx context.Context, t check.Target) (*check.Result, error) {
 		return &check.Result{Evidence: "sent PING without a password and got +PONG"}, nil
 	}
 	if strings.HasPrefix(reply, "-NOAUTH") || strings.HasPrefix(reply, "-DENIED") || strings.Contains(strings.ToLower(reply), "authentication required") || strings.Contains(strings.ToLower(reply), "protected mode") {
-		return nil, nil // server requires a password, no finding
+		return nil, nil // password needed or protected mode, no finding
 	}
 
 	return nil, fmt.Errorf("unexpected Redis reply: %q", reply)
