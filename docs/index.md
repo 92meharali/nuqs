@@ -2,7 +2,7 @@
 
 Nuqs is a non-overengineered, open-source vulnerability assessment tool. It uses Nmap to find hosts and open ports, then runs small checks on each service to find real problems.
 
-It's simple to run, packed with features, and reliable: every finding comes with the evidence behind it.
+It is designed to be simple to use, feature-rich and reliable. Every finding includes the evidence behind it.
 
 ## What it does today
 
