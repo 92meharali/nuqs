@@ -11,7 +11,7 @@
 
 <p align="center">
   A non-overengineered, open-source vulnerability assessment tool built on Nmap.<br>
-  Simple to run, packed with features, and reliable enough to trust.
+  Simple, reliable and trust-worthy   
 </p>
 
 <p align="center">
