@@ -24,7 +24,7 @@ It skips itself if Nmap isn't installed. CI always runs it.
 
 ## End-to-end lab report
 
-With Go, Nmap and Docker Compose installed, run `./scripts/lab.sh`.
+With Go, Nmap, Python 3 and Docker Compose installed, run `./scripts/lab.sh`.
 The script builds the CLI and the FTP image from the checkout, starts the
 three services, and waits for them to be ready. The first build downloads the
 pinned images and the Alpine vsftpd package. Keep these loopback ports free.
@@ -40,7 +40,9 @@ findings, zero check errors, and a match with the checked-in
 `lab/expected-report.json`. The comparison validates the scan
 timestamps and substitutes two fixed values. Changes to the inventory,
 findings or errors produce a unified diff. Review that diff before updating
-the expected report. The script removes the lab containers on exit.
+the expected report. Before discovery, the runner checks for an FTP greeting
+on the published port. If the job fails, it prints the FTP container state,
+port mapping and recent logs before removing the containers.
 
 ## Fuzz tests
 
