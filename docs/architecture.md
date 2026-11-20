@@ -50,6 +50,8 @@ flowchart LR
   n_internal_engine --> n_internal_model
   n_internal_nmap --> n_internal_model
   n_internal_output --> n_internal_engine
+  n_internal_output --> n_internal_model
+  n_lab --> n_internal_model
 ```
 
 ## Packages
@@ -67,10 +69,10 @@ flowchart LR
 | `internal/engine` | Runs a scan from start to end. | `internal/check`, `internal/model` |
 | `internal/model` | Holds the small set of types that every part of Nuqs shares. | nothing else in Nuqs |
 | `internal/nmap` | Runs Nmap and turns its XML output into model.Host values. | `internal/model` |
-| `internal/output` | Prints a scan report, either as a table for people or as JSON for tools. | `internal/engine` |
+| `internal/output` | Prints a scan report, either as a table for people or as JSON for tools. | `internal/engine`, `internal/model` |
 | `internal/target` | Checks what the user asked us to scan before it ever reaches Nmap. | nothing else in Nuqs |
 | `internal/version` | Compares software versions the way each ecosystem does. | nothing else in Nuqs |
-| `lab` | Validates and fixes the two timestamps in a Nuqs JSON report. | nothing else in Nuqs |
+| `lab` | Validates and fixes the two timestamps in a Nuqs JSON report, and drops Nmap's product guess for the Telnet server, which changes between runs. | `internal/model` |
 | `tools/apidocs` | Writes the API reference pages of the website, one page per package, from the doc comments in the code. | nothing else in Nuqs |
 | `tools/archdiagram` | Writes docs/architecture.md, a diagram and a map of the repo built straight from the code. | nothing else in Nuqs |
 
@@ -194,7 +196,7 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders. 
 </details></li>
 </ul>
 </details></li>
-<li><details><summary><code>lab/</code> <span class="note">Validates and fixes the two timestamps in a Nuqs JSON report.</span></summary>
+<li><details><summary><code>lab/</code> <span class="note">Validates and fixes the two timestamps in a Nuqs JSON report, and drops Nmap&#39;s product guess for the Telnet server, which changes between runs.</span></summary>
 <ul>
 <li><details><summary><code>ftp/</code></summary>
 <ul>
