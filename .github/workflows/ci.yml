@@ -88,7 +88,7 @@ jobs:
   lab:
     name: Lab
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -96,7 +96,21 @@ jobs:
           go-version-file: go.mod
       - name: Install Nmap
         run: sudo apt-get update && sudo apt-get install -y nmap
-      - run: ./scripts/lab.sh
+      - name: Run lab with the checked-in FTP configuration
+        id: baseline
+        run: ./scripts/lab.sh
+      - name: Compare with vsftpd's internal seccomp filter disabled
+        if: >-
+          ${{ !cancelled() && github.event.pull_request.number == 4 &&
+          (steps.baseline.outcome == 'failure' || steps.baseline.outcome == 'success') }}
+        shell: bash
+        run: |
+          trial=$(mktemp -d)
+          trap 'rm -rf -- "$trial"' EXIT
+          git archive HEAD | tar -x -C "$trial"
+          cd "$trial"
+          echo 'seccomp_sandbox=NO' >> lab/ftp/vsftpd.conf
+          ./scripts/lab.sh
 
   build:
     name: Build and smoke test
