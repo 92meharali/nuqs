@@ -22,6 +22,28 @@ go test -tags integration -v ./test/integration
 
 It skips itself if Nmap isn't installed. CI always runs it.
 
+## End-to-end lab report
+
+With Go, Nmap, Python 3 and Docker Compose installed, run `./scripts/lab.sh`.
+The script builds the CLI and the FTP image from the checkout, starts the
+three services, and waits for them to be ready. The first build downloads the
+pinned images and the Alpine vsftpd package. Keep these loopback ports free.
+
+| Service | Port | Expected finding |
+| --- | --- | --- |
+| vsftpd | 12121 | Medium. The empty public service accepts the anonymous handshake and prohibits file transfers. |
+| BusyBox telnetd | 12323 | Medium. The listener negotiates Telnet and closes the session without starting a shell. |
+| nginx | 18080 | Low. The static page omits the three HTTP security headers checked by Nuqs. |
+
+Nuqs uses real Nmap discovery and its built-in check registry. Expect three
+findings, zero check errors, and a match with the checked-in
+`lab/expected-report.json`. The comparison validates the scan
+timestamps and substitutes two fixed values. Changes to the inventory,
+findings or errors produce a unified diff. Review that diff before updating
+the expected report. Before discovery, the runner checks for an FTP greeting
+on the published port. If the job fails, it prints the FTP container state,
+port mapping and recent logs before removing the containers.
+
 ## Fuzz tests
 
 Anything that reads untrusted input has a fuzz test. Fuzzing throws millions of random inputs at it to find crashes.
@@ -45,6 +67,7 @@ Every push and PR runs:
 | Coverage | total coverage drops below **85%** |
 | Fuzz (short) | a fuzz target crashes in 30 seconds |
 | Integration | the real Nmap scan doesn't find what it should |
+| Lab report | the built CLI’s report for the lab differs from the saved JSON |
 | Build | the binary doesn't build or `nuqs version` fails |
 | govulncheck | a known vulnerability affects our code or Go version |
 | Docs | the website doesn't build (broken links and so on) |

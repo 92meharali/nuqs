@@ -85,6 +85,19 @@ jobs:
       - name: Run
         run: go test -tags integration -v -count=1 ./test/integration
 
+  lab:
+    name: Lab
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install Nmap
+        run: sudo apt-get update && sudo apt-get install -y nmap
+      - run: ./scripts/lab.sh
+
   build:
     name: Build and smoke test
     runs-on: ubuntu-latest

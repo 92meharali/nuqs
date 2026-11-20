@@ -1,0 +1,45 @@
+# Runs the three loopback services for the Nuqs report test.
+services:
+  web:
+    image: nginx:stable-alpine@sha256:3bc3836dc0be3b811f238210360bf8e7ca8a2d0effdae46160bf1f3578710051
+    entrypoint: ["nginx", "-g", "daemon off;"]
+    user: "65534:65534"
+    read_only: true
+    cap_drop: [ALL]
+    tmpfs:
+      - /tmp
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./index.html:/www/index.html:ro
+    ports:
+      - "127.0.0.1:18080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 1s
+      timeout: 2s
+      retries: 20
+  telnet:
+    image: busybox:1.37.0@sha256:a7dbc319b1438115a207e11930dc4bb3e643dcb3ec0bdd694bb36cd8fad289ec
+    command: ["telnetd", "-F", "-p", "2323", "-l", "/bin/true"]
+    user: "65534:65534"
+    read_only: true
+    cap_drop: [ALL]
+    ports:
+      - "127.0.0.1:12323:2323"
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -lnt | grep -q ':2323 '"]
+      interval: 1s
+      timeout: 2s
+      retries: 20
+  ftp:
+    build: ./ftp
+    read_only: true
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    cap_add: [SETUID, SETGID, SYS_CHROOT]
+    ports: ["127.0.0.1:12121:2121"]
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -lnt | grep -q ':2121 '"]
+      interval: 1s
+      timeout: 2s
+      retries: 15
