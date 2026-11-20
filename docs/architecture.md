@@ -11,7 +11,7 @@ An arrow means "uses". For example `internal/cli --> internal/engine` means the 
 flowchart LR
   subgraph n_g_checks ["checks"]
     n_checks["checks"]
-    n_checks__["checks/*<br/><small>ftpanon, httpheaders, telnet</small>"]
+    n_checks__["checks/*<br/><small>ftpanon, httpheaders, redisnoauth, telnet</small>"]
   end
   subgraph n_g_cmd ["cmd"]
     n_cmd_nuqs["cmd/nuqs"]
@@ -53,9 +53,10 @@ flowchart LR
 
 | Package | What it does | Uses |
 |---|---|---|
-| `checks` | Lists every check that ships with Nuqs. | `checks/ftpanon`, `checks/httpheaders`, `checks/telnet`, `internal/check` |
+| `checks` | Lists every check that ships with Nuqs. | `checks/ftpanon`, `checks/httpheaders`, `checks/redisnoauth`, `checks/telnet`, `internal/check` |
 | `checks/ftpanon` | Checks if an FTP server lets anyone log in as "anonymous". | `internal/check`, `internal/model` |
 | `checks/httpheaders` | Checks web servers for missing security headers. | `internal/check`, `internal/model` |
+| `checks/redisnoauth` | Checks if a Redis server allows unauthenticated access. | `internal/check`, `internal/model` |
 | `checks/telnet` | Flags open Telnet services. | `internal/check`, `internal/model` |
 | `cmd/nuqs` | The Nuqs vulnerability assessment tool. | `checks`, `internal/cli`, `internal/nmap` |
 | `internal/check` | Defines what a check is. | `internal/model` |
@@ -99,6 +100,12 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders. 
 <ul>
 <li><code>httpheaders.go</code></li>
 <li><code>httpheaders_test.go</code> <span class="note">Tests the web headers check against local test servers.</span></li>
+</ul>
+</details></li>
+<li><details><summary><code>redisnoauth/</code> <span class="note">Checks if a Redis server allows unauthenticated access.</span></summary>
+<ul>
+<li><code>redisnoauth.go</code></li>
+<li><code>redisnoauth_test.go</code> <span class="note">Tests the Redis unauthenticated access check against fake Redis servers.</span></li>
 </ul>
 </details></li>
 <li><details><summary><code>telnet/</code> <span class="note">Flags open Telnet services.</span></summary>
