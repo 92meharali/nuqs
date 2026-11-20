@@ -2,12 +2,12 @@
 
 Nuqs is a non-overengineered, open-source vulnerability assessment tool. It uses Nmap to find hosts and open ports, then runs small checks on each service to find real problems.
 
-We're building it as our final year project, as a simpler and more trustworthy alternative to Nessus.
+It's simple to run, packed with features, and reliable: every finding comes with the evidence behind it.
 
 ## What it does today
 
 - Finds hosts and open services with Nmap
-- Runs 3 checks: open Telnet, missing web security headers, anonymous FTP login
+- Runs 4 checks: open Telnet, missing web security headers, anonymous FTP login, Redis with no password
 - Shows every finding with **evidence** (what we actually saw) and a **fix**
 - Prints a readable report or JSON
 

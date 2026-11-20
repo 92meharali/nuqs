@@ -15,7 +15,7 @@ targets ──► target.Parse ──► Nmap ──► hosts + services ──�
 
 ## Where the code lives
 
-See [Architecture](architecture.md). It shows every package, what it does, what it uses, and every file in the repo. It's generated from the code on every push, so it's always right.
+See [Architecture](architecture.md). It shows every package, what it does, what it uses, and every file in the repo. It's generated from the code on every docs build, so it's always right.
 
 ## Rules we keep
 

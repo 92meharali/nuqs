@@ -8,6 +8,8 @@
 
 # Generated docs (CI builds these from code comments)
 /docs/api/
+/docs/architecture.md
+/docs/architecture.md
 /site/
 
 # Editors and OS
