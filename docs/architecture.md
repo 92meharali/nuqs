@@ -26,6 +26,9 @@ flowchart LR
     n_internal_target["internal/target"]
     n_internal_version["internal/version"]
   end
+  subgraph n_g_lab ["lab"]
+    n_lab["lab"]
+  end
   subgraph n_g_tools ["tools"]
     n_tools_apidocs["tools/apidocs"]
     n_tools_archdiagram["tools/archdiagram"]
@@ -67,6 +70,7 @@ flowchart LR
 | `internal/output` | Prints a scan report, either as a table for people or as JSON for tools. | `internal/engine` |
 | `internal/target` | Checks what the user asked us to scan before it ever reaches Nmap. | nothing else in Nuqs |
 | `internal/version` | Compares software versions the way each ecosystem does. | nothing else in Nuqs |
+| `lab` | Validates and fixes the two timestamps in a Nuqs JSON report. | nothing else in Nuqs |
 | `tools/apidocs` | Writes the API reference pages of the website, one page per package, from the doc comments in the code. | nothing else in Nuqs |
 | `tools/archdiagram` | Writes docs/architecture.md, a diagram and a map of the repo built straight from the code. | nothing else in Nuqs |
 
@@ -190,9 +194,26 @@ Every file in the repo, as git sees it, except the `docs/` and `test/` folders. 
 </details></li>
 </ul>
 </details></li>
+<li><details><summary><code>lab/</code> <span class="note">Validates and fixes the two timestamps in a Nuqs JSON report.</span></summary>
+<ul>
+<li><details><summary><code>ftp/</code></summary>
+<ul>
+<li><code>Dockerfile</code> <span class="note">Builds the public FTP handshake fixture used in the lab.</span></li>
+<li><code>vsftpd.conf</code> <span class="note">Allows a public handshake with an empty directory and no file transfers.</span></li>
+</ul>
+</details></li>
+<li><code>docker-compose.yml</code> <span class="note">Runs the three loopback services for the Nuqs report test.</span></li>
+<li><code>expected-report.json</code></li>
+<li><code>index.html</code></li>
+<li><code>nginx.conf</code> <span class="note">Serves a static page with a read-only root filesystem.</span></li>
+<li><code>normalize.go</code></li>
+<li><code>normalize_test.go</code> <span class="note">Tests the timestamp normalization used by the lab report comparison.</span></li>
+</ul>
+</details></li>
 <li><details><summary><code>scripts/</code> <span class="note">Small helper scripts used by CI.</span></summary>
 <ul>
 <li><code>docs.sh</code> <span class="note">Builds the docs website.</span></li>
+<li><code>lab.sh</code> <span class="note">Builds Nuqs and compares its report for the loopback lab services with the golden file.</span></li>
 </ul>
 </details></li>
 <li><details><summary><code>tools/</code> <span class="note">Helper programs for developing Nuqs. Not part of the scanner.</span></summary>
