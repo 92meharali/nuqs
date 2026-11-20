@@ -24,7 +24,7 @@ It skips itself if Nmap isn't installed. CI always runs it.
 
 ## End-to-end lab report
 
-With Go, Nmap and Docker Compose installed, run `./scripts/test-http-lab.sh`.
+With Go, Nmap and Docker Compose installed, run `./scripts/lab.sh`.
 The script builds the CLI and the FTP image from the checkout, starts the
 three services, and waits for them to be ready. The first build downloads the
 pinned images and the Alpine vsftpd package. Keep these loopback ports free.

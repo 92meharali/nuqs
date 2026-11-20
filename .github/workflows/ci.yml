@@ -85,8 +85,8 @@ jobs:
       - name: Run
         run: go test -tags integration -v -count=1 ./test/integration
 
-  http-lab:
-    name: Lab report (real Nmap and CLI)
+  lab:
+    name: Lab
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -96,7 +96,7 @@ jobs:
           go-version-file: go.mod
       - name: Install Nmap
         run: sudo apt-get update && sudo apt-get install -y nmap
-      - run: ./scripts/test-http-lab.sh
+      - run: ./scripts/lab.sh
 
   build:
     name: Build and smoke test

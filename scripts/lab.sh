@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 workdir=$(mktemp -d)
-compose=(docker compose -f lab/docker-compose.yml -p "nuqs-http-lab-$$")
+compose=(docker compose -f lab/docker-compose.yml -p "nuqs-lab-$$")
 cleanup() {
   "${compose[@]}" down --rmi local
   rm -r -- "$workdir"
