@@ -22,7 +22,7 @@ func sample() *engine.Report {
 		Finished: start.Add(2500 * time.Millisecond),
 		Hosts:    []model.Host{{Address: "192.168.1.1", Services: []model.Service{{Port: 23, Protocol: "tcp", Name: "telnet"}, {Port: 80, Protocol: "tcp", Name: "http"}}}},
 		Findings: []model.Finding{{
-			ID: "telnet-open|192.168.1.1|23/tcp", CheckID: "telnet-open", Title: "Unencrypted Telnet server", Severity: model.Medium,
+			ID: "telnet-open|192.168.1.1|23/tcp", CheckID: "telnet-open", Title: "Unencrypted Telnet server", Severity: model.Medium, Confidence: model.Confirmed,
 			Host: "192.168.1.1", Port: 23, Protocol: "tcp", Evidence: "port 23/tcp is open", Fix: "Turn off Telnet.",
 		}},
 		Errors: []engine.CheckError{{CheckID: "http-security-headers", Host: "192.168.1.1", Port: 80, Error: "connection reset\nmore detail"}},
@@ -39,7 +39,8 @@ func TestText(t *testing.T) {
 		"Scanned 192.168.1.1 in 2.5s",
 		"Hosts up: 1, open services: 2",
 		"Findings (1):",
-		"MEDIUM", "192.168.1.1", "23/tcp", "telnet-open", "Unencrypted Telnet server",
+		"CONFIDENCE", "MEDIUM", "confirmed", "192.168.1.1",
+		"Unencrypted Telnet server on 192.168.1.1:23 (confirmed)", "23/tcp", "telnet-open", "Unencrypted Telnet server",
 		"Evidence: port 23/tcp is open",
 		"Fix: Turn off Telnet.",
 		"Checks that could not finish (1):",
@@ -78,6 +79,9 @@ func TestJSON(t *testing.T) {
 	if len(back.Findings) != 1 || back.Findings[0].Severity != model.Medium || back.Hosts[0].Services[1].Port != 80 {
 		t.Errorf("JSON lost data: %+v", back)
 	}
+	if !strings.Contains(b.String(), `"confidence": "confirmed"`) {
+		t.Error("confidence should be in the JSON")
+	}
 	if !strings.Contains(b.String(), `"severity": "medium"`) {
 		t.Error("severity should be written as a name")
 	}
@@ -98,5 +102,17 @@ func TestWriteErrors(t *testing.T) {
 	}
 	if err := JSON(failWriter{}, sample()); err == nil {
 		t.Error("JSON should return write errors")
+	}
+}
+
+func TestTextEmptyConfidence(t *testing.T) {
+	r := sample()
+	r.Findings[0].Confidence = ""
+	var b bytes.Buffer
+	if err := Text(&b, r); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(b.String(), "()") || !strings.Contains(b.String(), "(confirmed)") {
+		t.Errorf("an empty confidence should print as confirmed:\n%s", b.String())
 	}
 }

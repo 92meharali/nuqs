@@ -38,8 +38,9 @@ pinned images and the Alpine vsftpd package. Keep these loopback ports free.
 Nuqs uses real Nmap discovery and its built-in check registry. Expect three
 findings, zero check errors, and a match with the checked-in
 `lab/expected-report.json`. The comparison validates the scan
-timestamps and substitutes two fixed values. Changes to the inventory,
-findings or errors produce a unified diff. Review that diff before updating
+timestamps and substitutes two fixed values. It also drops Nmap's product
+guess for the Telnet server, because Nmap names BusyBox on some runs only.
+Changes to the inventory, findings or errors produce a unified diff. Review that diff before updating
 the expected report. Before discovery, the runner checks for an FTP greeting
 on the published port. If the job fails, it prints the FTP container state,
 port mapping and recent logs before removing the containers.

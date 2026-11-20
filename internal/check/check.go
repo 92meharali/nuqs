@@ -47,6 +47,12 @@ func (t Target) Address() string {
 // Result is what a check returns when it finds something.
 type Result struct {
 	Evidence string // what we saw, in plain words, for example "server sent 230 after anonymous login"
+
+	// Confidence is how sure the check is. Leave it empty when the check saw
+	// the problem itself, that counts as model.Confirmed. Set model.Inferred
+	// when the finding comes only from a version number or from Nmap guessing
+	// the service from the port.
+	Confidence model.Confidence
 }
 
 // Check is the interface every check implements.
