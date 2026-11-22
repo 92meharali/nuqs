@@ -247,6 +247,35 @@ func TestCompletedScanPages(t *testing.T) {
 	}
 }
 
+func TestFindingFilters(t *testing.T) {
+	h := newTestWeb(t, &fakeRunner{xml: scanXML})
+	scan := startAndWait(t, h, "Filtered scan")
+	url := "/scans/" + scan.ID + "?tab=vulns"
+	_, body := get(t, h, url+"&severity=medium&confidence=confirmed")
+	mustContain(t, "matching filters", body, "1 of 1 findings match", `value="medium" selected`, `value="confirmed" selected`, "Unencrypted Telnet", "Clear filters")
+	_, body = get(t, h, url+"&severity=medium&confidence=inferred")
+	mustContain(t, "no matches", body, "0 of 1 findings match", "No findings match these filters.")
+	if strings.Contains(body, `/vulns/telnet-open`) {
+		t.Error("nonmatching finding is linked")
+	}
+}
+
+func TestGroupedFindingHostCount(t *testing.T) {
+	confirmed := model.Finding{CheckID: "example", Host: "host-a", Severity: model.High, Confidence: model.Confirmed, Port: 80}
+	secondPort := confirmed
+	secondPort.Port = 443
+	inferred := confirmed
+	inferred.Host = "host-b"
+	inferred.Confidence = model.Inferred
+	low := confirmed
+	low.CheckID = "low"
+	low.Severity = model.Low
+	rows, matches := groupFindings([]model.Finding{confirmed, secondPort, inferred, low}, findingFilters{Severity: "high", Confidence: model.Confirmed})
+	if matches != 2 || len(rows) != 1 || rows[0].Hosts != 1 {
+		t.Fatalf("want two matching findings on one host, got %d matches and %+v", matches, rows)
+	}
+}
+
 func TestRunningAndFailedScan(t *testing.T) {
 	runner := &fakeRunner{xml: scanXML, release: make(chan struct{})}
 	h := newTestWeb(t, runner)

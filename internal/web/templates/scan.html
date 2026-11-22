@@ -26,7 +26,7 @@
       {{if .Report}}
       <nav class="segmented" aria-label="Results">
         <a href="/scans/{{.ID}}"{{if eq .Tab "hosts"}} aria-current="page"{{end}}>Hosts <span class="count">{{len .Hosts}}</span></a>
-        <a href="/scans/{{.ID}}?tab=vulns"{{if eq .Tab "vulns"}} aria-current="page"{{end}}>Vulnerabilities <span class="count">{{len .Vulns}}</span></a>
+        <a href="/scans/{{.ID}}?tab=vulns"{{if eq .Tab "vulns"}} aria-current="page"{{end}}>Vulnerabilities <span class="count">{{.TotalVulns}}</span></a>
       </nav>
       {{if eq .Tab "hosts"}}
       <div class="tableCard">
@@ -40,6 +40,29 @@
         </table>{{else}}<p class="emptyRow">No hosts answered. If they block ping, turn on "Scan hosts even if they don't answer ping" under Discovery.</p>{{end}}
       </div>
       {{else}}
+      <form class="findingFilters" method="get" action="/scans/{{.ID}}" aria-label="Filter vulnerabilities">
+        <input type="hidden" name="tab" value="vulns">
+        <label>Severity
+          <select name="severity">
+            <option value="">All severities</option>
+            <option value="critical"{{if eq .Filters.Severity "critical"}} selected{{end}}>Critical</option>
+            <option value="high"{{if eq .Filters.Severity "high"}} selected{{end}}>High</option>
+            <option value="medium"{{if eq .Filters.Severity "medium"}} selected{{end}}>Medium</option>
+            <option value="low"{{if eq .Filters.Severity "low"}} selected{{end}}>Low</option>
+            <option value="info"{{if eq .Filters.Severity "info"}} selected{{end}}>Info</option>
+          </select>
+        </label>
+        <label>Confidence
+          <select name="confidence">
+            <option value="">All confidence levels</option>
+            <option value="confirmed"{{if eq .Filters.Confidence "confirmed"}} selected{{end}}>Confirmed</option>
+            <option value="inferred"{{if eq .Filters.Confidence "inferred"}} selected{{end}}>Inferred</option>
+          </select>
+        </label>
+        <button type="submit">Apply filters</button>
+        {{if .Filters.Active}}<a href="/scans/{{.ID}}?tab=vulns">Clear filters</a>{{end}}
+      </form>
+      <p class="findingMatchCount">{{.Matches}} of {{len .Report.Findings}} findings match</p>
       <div class="tableCard">
         {{if .Vulns}}<table class="list">
           <thead><tr><th class="narrow">Severity</th><th class="wide">Name</th><th>Hosts</th></tr></thead>
@@ -48,7 +71,7 @@
             <td><a href="/scans/{{$id}}/vulns/{{.CheckID}}"><strong>{{.Title}}</strong></a><small class="mono">{{.CheckID}}</small></td>
             <td>{{.Hosts}}</td>
           </tr>{{end}}</tbody>
-        </table>{{else}}<p class="emptyRow">Nothing found. Every check that ran came back clean.</p>{{end}}
+        </table>{{else}}<p class="emptyRow">{{if .Filters.Active}}No findings match these filters.{{else}}No findings were reported.{{end}}</p>{{end}}
       </div>
       {{end}}
       {{if .Errors}}

@@ -285,19 +285,61 @@ type vulnRow struct {
 	Hosts    int
 }
 
+type findingFilters struct {
+	Severity   string
+	Confidence model.Confidence
+}
+
+func (f findingFilters) Active() bool { return f.Severity != "" || f.Confidence != "" }
+
+func groupFindings(findings []model.Finding, filters findingFilters) ([]vulnRow, int) {
+	byCheck := map[string]*vulnRow{}
+	type checkHost struct{ check, host string }
+	seen := map[checkHost]bool{}
+	matches := 0
+	for _, f := range findings {
+		if filters.Severity != "" && f.Severity.String() != filters.Severity ||
+			filters.Confidence != "" && f.Confidence != filters.Confidence {
+			continue
+		}
+		matches++
+		row := byCheck[f.CheckID]
+		if row == nil {
+			row = &vulnRow{CheckID: f.CheckID, Title: f.Title, Severity: f.Severity.String()}
+			byCheck[f.CheckID] = row
+		}
+		key := checkHost{f.CheckID, f.Host}
+		if !seen[key] {
+			row.Hosts++
+			seen[key] = true
+		}
+	}
+	rows := make([]vulnRow, 0, len(byCheck))
+	for _, row := range byCheck {
+		rows = append(rows, *row)
+	}
+	slices.SortFunc(rows, func(a, b vulnRow) int {
+		return cmp.Or(cmp.Compare(severityRank(a.Severity), severityRank(b.Severity)), cmp.Compare(a.Title, b.Title), cmp.Compare(a.CheckID, b.CheckID))
+	})
+	return rows, matches
+}
+
 type detail struct{ Label, Value string }
 
 type scanData struct {
 	tools.Scan
-	Tab     string // "hosts" or "vulns"
-	Label   string
-	Class   string
-	Counts  sevCounts
-	Donut   template.CSS
-	Hosts   []hostRow
-	Vulns   []vulnRow
-	Errors  []engine.CheckError
-	Details []detail
+	Tab        string // "hosts" or "vulns"
+	Label      string
+	Class      string
+	Counts     sevCounts
+	Donut      template.CSS
+	Hosts      []hostRow
+	Vulns      []vulnRow
+	Filters    findingFilters
+	Matches    int
+	TotalVulns int
+	Errors     []engine.CheckError
+	Details    []detail
 }
 
 func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
@@ -307,8 +349,15 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := scanData{Scan: s, Tab: "hosts", Label: statusLabel(s), Class: statusClass(s), Counts: countOf(s.Report)}
-	if r.URL.Query().Get("tab") == "vulns" {
+	query := r.URL.Query()
+	if query.Get("tab") == "vulns" {
 		data.Tab = "vulns"
+		if severity, err := model.ParseSeverity(query.Get("severity")); err == nil {
+			data.Filters.Severity = severity.String()
+		}
+		if confidence := model.Confidence(query.Get("confidence")); confidence.Valid() {
+			data.Filters.Confidence = confidence
+		}
 	}
 	data.Donut = donut(data.Counts)
 	data.Details = scanDetails(s)
@@ -323,22 +372,12 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 			}
 			data.Hosts = append(data.Hosts, row)
 		}
-		// One row per problem, with how many hosts have it, worst first.
-		byCheck := map[string]*vulnRow{}
-		for _, f := range rep.Findings {
-			v := byCheck[f.CheckID]
-			if v == nil {
-				v = &vulnRow{CheckID: f.CheckID, Title: f.Title, Severity: f.Severity.String()}
-				byCheck[f.CheckID] = v
-			}
-			v.Hosts++
+		all, count := groupFindings(rep.Findings, findingFilters{})
+		data.TotalVulns = len(all)
+		data.Vulns, data.Matches = all, count
+		if data.Filters.Active() {
+			data.Vulns, data.Matches = groupFindings(rep.Findings, data.Filters)
 		}
-		for _, v := range byCheck {
-			data.Vulns = append(data.Vulns, *v)
-		}
-		slices.SortFunc(data.Vulns, func(a, b vulnRow) int {
-			return cmp.Or(cmp.Compare(severityRank(a.Severity), severityRank(b.Severity)), cmp.Compare(a.Title, b.Title))
-		})
 		slices.SortFunc(data.Hosts, func(a, b hostRow) int {
 			return cmp.Or(cmp.Compare(b.Counts.Critical, a.Counts.Critical), cmp.Compare(b.Counts.High, a.Counts.High),
 				cmp.Compare(b.Counts.Total(), a.Counts.Total()), cmp.Compare(a.Address, b.Address))
