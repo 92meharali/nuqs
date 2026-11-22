@@ -28,12 +28,14 @@ type Check struct {
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "ssh-no-auth",
-		Title:    "SSH server lets anyone log in without a password",
-		Severity: model.Critical,
-		Fix:      "Make the SSH server ask for a key or password for every login (in OpenSSH, set PermitEmptyPasswords no). On a device where you can't change that, update its firmware or turn SSH off.",
-		Ports:    []int{22},
-		Services: []string{"ssh"},
+		ID:               "ssh-no-auth",
+		Title:            "SSH server lets anyone log in without a password",
+		Severity:         model.Critical,
+		Fix:              "Make the SSH server ask for a key or password for every login (in OpenSSH, set PermitEmptyPasswords no). On a device where you can't change that, update its firmware or turn SSH off.",
+		RemediationID:    "ssh-public-key-only",
+		RemediationTitle: "Require SSH public-key authentication",
+		Ports:            []int{22},
+		Services:         []string{"ssh"},
 	}
 }
 

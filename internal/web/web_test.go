@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/nuqs-org/nuqs/checks"
 	"github.com/nuqs-org/nuqs/checks/telnet"
 	"github.com/nuqs-org/nuqs/internal/check"
 	"github.com/nuqs-org/nuqs/internal/model"
@@ -251,23 +252,34 @@ func TestByFix(t *testing.T) {
 	h := newTestWeb(t, &fakeRunner{xml: scanXML})
 	scan := startAndWait(t, h, "Lab box")
 	_, body := get(t, h, "/scans/"+scan.ID+"?tab=fixes")
-	mustContain(t, "fixes tab", body, `aria-current="page">By fix`, "Highest severity", "Unencrypted Telnet", `href="/scans/`+scan.ID+`/vulns/telnet-open"`)
+	mustContain(t, "fixes tab", body, `aria-current="page">By fix`, "Highest severity", `By fix <span class="count">1</span>`, `<details class="fixDetails">`, `data-fix="`, "Unencrypted Telnet", `href="/scans/`+scan.ID+`/vulns/telnet-open"`)
 }
 
 func TestGroupByFix(t *testing.T) {
-	rows := groupByFix([]model.Finding{
-		{CheckID: "a", Fix: "Shared fix", Severity: model.Low, Host: "one", Port: 80},
-		{CheckID: "a", Fix: "Shared fix", Severity: model.Low, Host: "one", Port: 443},
-		{CheckID: "b", Fix: "Shared fix", Severity: model.High, Host: "two"},
-		{CheckID: "c", Fix: "Other fix", Severity: model.Medium, Host: "one"},
-		{CheckID: "d", Severity: model.Info, Host: "one"},
-		{CheckID: "e", Severity: model.Info, Host: "one"},
-	})
-	if len(rows) != 4 || rows[0].Fix != "Shared fix" || rows[0].Severity != "high" ||
-		rows[0].Findings != 3 || rows[0].Hosts != 2 || len(rows[0].Checks) != 2 || rows[1].Fix != "Other fix" {
+	registered := checks.All()
+	findings := []model.Finding{
+		{CheckID: "unknown-a", Fix: "Shared wording", Severity: model.Info, Host: "one"},
+		{CheckID: "unknown-b", Fix: "Shared wording", Severity: model.Info, Host: "one"},
+	}
+	for _, c := range registered {
+		info := c.Info()
+		switch info.ID {
+		case "ssh-password-auth":
+			finding := model.Finding{CheckID: info.ID, Title: info.Title, Fix: info.Fix, Severity: info.Severity, Host: "one", Port: 22}
+			findings = append(findings, finding)
+			finding.Port = 2222
+			findings = append(findings, finding)
+		case "ssh-no-auth":
+			findings = append(findings, model.Finding{CheckID: info.ID, Title: info.Title, Fix: info.Fix, Severity: info.Severity, Host: "two"})
+		}
+	}
+	rows := groupByFix(findings, registered)
+	if len(rows) != 3 || rows[0].Title != "Require SSH public-key authentication" || rows[0].Severity != "critical" ||
+		rows[0].Findings != 3 || rows[0].Hosts != 2 || len(rows[0].Instructions) != 2 ||
+		rows[0].Instructions[0].Text == rows[0].Instructions[1].Text {
 		t.Fatalf("unexpected remediation groups: %+v", rows)
 	}
-	if rows := groupByFix(nil); len(rows) != 0 {
+	if rows := groupByFix(nil, nil); len(rows) != 0 {
 		t.Fatalf("empty report produced groups: %+v", rows)
 	}
 }

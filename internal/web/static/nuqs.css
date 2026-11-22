@@ -208,3 +208,7 @@ dialog::backdrop {background:#00000066}
   .list th:nth-child(n+4),.list td:nth-child(n+4) {display:none}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after {animation:none!important;transition:none!important}}
+
+.fixDetails summary {cursor:pointer}
+.fixDetails div {margin-top:12px;overflow-wrap:anywhere}
+.fixDetails p {margin:4px 0 8px}

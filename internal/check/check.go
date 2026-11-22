@@ -24,6 +24,10 @@ type Info struct {
 	Severity model.Severity // how bad it is when found
 	Fix      string         // what the user should do about it
 
+	// Share a remediation ID only when one action addresses both checks.
+	RemediationID    string
+	RemediationTitle string
+
 	// Where the check applies. A service matches if its port is in Ports OR
 	// its Nmap service name is in Services. Leave both empty to match every service.
 	Ports    []int

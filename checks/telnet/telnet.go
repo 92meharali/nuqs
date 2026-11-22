@@ -20,11 +20,12 @@ type Check struct{}
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "telnet-open",
-		Title:    "Unencrypted Telnet server",
-		Severity: model.Medium,
-		Fix:      "Turn off Telnet and use SSH instead. Telnet sends passwords as plain text, so anyone on the network can read them.",
-		Services: []string{"telnet"},
+		ID:               "telnet-open",
+		Title:            "Unencrypted Telnet server",
+		Severity:         model.Medium,
+		Fix:              "Turn off Telnet and use SSH instead. Telnet sends passwords as plain text, so anyone on the network can read them.",
+		RemediationTitle: "Replace Telnet with SSH",
+		Services:         []string{"telnet"},
 	}
 }
 

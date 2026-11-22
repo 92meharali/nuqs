@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nuqs-org/nuqs/internal/check"
 	"github.com/nuqs-org/nuqs/internal/engine"
 	"github.com/nuqs-org/nuqs/internal/model"
 	"github.com/nuqs-org/nuqs/internal/tools"
@@ -285,53 +286,69 @@ type vulnRow struct {
 	Hosts    int
 }
 
-type fixRow struct {
-	Fix      string
-	Severity string
-	Findings int
-	Hosts    int
-	Checks   []vulnRow
+type fixInstruction struct {
+	CheckID, Title, Text string
 }
 
-func groupByFix(findings []model.Finding) []fixRow {
-	type fixKey struct{ text, check string }
+type fixRow struct {
+	Title        string
+	Severity     string
+	Findings     int
+	Hosts        int
+	Instructions []fixInstruction
+}
+
+func groupByFix(findings []model.Finding, checks []check.Check) []fixRow {
+	metadata := make(map[string]check.Info, len(checks))
+	for _, c := range checks {
+		info := c.Info()
+		metadata[info.ID] = info
+	}
+
+	type fixKey struct{ remediation, check string }
 	type group struct {
-		row     fixRow
-		highest model.Severity
-		hosts   map[string]bool
-		checks  map[string]vulnRow
+		row          fixRow
+		highest      model.Severity
+		hosts        map[string]bool
+		instructions map[fixInstruction]bool
 	}
 	groups := map[fixKey]*group{}
 	for _, finding := range findings {
-		key := fixKey{text: strings.TrimSpace(finding.Fix)}
-		if key.text == "" {
+		info := metadata[finding.CheckID]
+		key := fixKey{remediation: info.RemediationID}
+		if key.remediation == "" {
 			key.check = finding.CheckID
 		}
 		g := groups[key]
 		if g == nil {
-			g = &group{row: fixRow{Fix: key.text}, highest: finding.Severity, hosts: map[string]bool{}, checks: map[string]vulnRow{}}
+			title := info.RemediationTitle
+			if title == "" {
+				title = finding.Title
+			}
+			g = &group{row: fixRow{Title: title}, highest: finding.Severity, hosts: map[string]bool{}, instructions: map[fixInstruction]bool{}}
 			groups[key] = g
 		}
 		g.highest = max(g.highest, finding.Severity)
 		g.row.Findings++
 		g.hosts[finding.Host] = true
-		g.checks[finding.CheckID] = vulnRow{CheckID: finding.CheckID, Title: finding.Title}
+		instruction := fixInstruction{CheckID: finding.CheckID, Title: finding.Title, Text: finding.Fix}
+		if !g.instructions[instruction] {
+			g.instructions[instruction] = true
+			g.row.Instructions = append(g.row.Instructions, instruction)
+		}
 	}
 	rows := make([]fixRow, 0, len(groups))
 	for _, g := range groups {
 		g.row.Severity = g.highest.String()
 		g.row.Hosts = len(g.hosts)
-		for _, check := range g.checks {
-			g.row.Checks = append(g.row.Checks, check)
-		}
-		slices.SortFunc(g.row.Checks, func(a, b vulnRow) int {
-			return cmp.Or(cmp.Compare(a.Title, b.Title), cmp.Compare(a.CheckID, b.CheckID))
+		slices.SortFunc(g.row.Instructions, func(a, b fixInstruction) int {
+			return cmp.Or(cmp.Compare(a.Title, b.Title), cmp.Compare(a.CheckID, b.CheckID), cmp.Compare(a.Text, b.Text))
 		})
 		rows = append(rows, g.row)
 	}
 	slices.SortFunc(rows, func(a, b fixRow) int {
 		return cmp.Or(cmp.Compare(severityRank(a.Severity), severityRank(b.Severity)),
-			cmp.Compare(a.Fix, b.Fix), cmp.Compare(a.Checks[0].CheckID, b.Checks[0].CheckID))
+			cmp.Compare(a.Title, b.Title), cmp.Compare(a.Instructions[0].CheckID, b.Instructions[0].CheckID))
 	})
 	return rows
 }
@@ -340,7 +357,7 @@ type detail struct{ Label, Value string }
 
 type scanData struct {
 	tools.Scan
-	Tab     string
+	Tab     string // "hosts", "vulns" or "fixes"
 	Label   string
 	Class   string
 	Counts  sevCounts
@@ -366,9 +383,7 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 	data.Details = scanDetails(s)
 	if rep := s.Report; rep != nil {
 		data.Errors = rep.Errors
-		if data.Tab == "fixes" {
-			data.Fixes = groupByFix(rep.Findings)
-		}
+		data.Fixes = groupByFix(rep.Findings, h.Service.Checks())
 		for _, host := range rep.Hosts {
 			row := hostRow{Address: host.Address, Hostnames: host.Hostnames, Open: len(host.Services)}
 			for _, f := range rep.Findings {

@@ -39,12 +39,13 @@ var tlsNames = []string{"https", "https-alt", "ssl", "imaps", "pop3s", "smtps", 
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "tls-deprecated-protocols",
-		Title:    "Server accepts old TLS versions",
-		Severity: model.Medium,
-		Fix:      "Allow only TLS 1.2 and 1.3. In nginx set ssl_protocols TLSv1.2 TLSv1.3; in Apache set SSLProtocol -all +TLSv1.2 +TLSv1.3.",
-		Ports:    []int{443, 465, 636, 993, 995, 8443},
-		Services: append([]string{"http", "http-alt", "http-proxy"}, tlsNames...),
+		ID:               "tls-deprecated-protocols",
+		Title:            "Server accepts old TLS versions",
+		Severity:         model.Medium,
+		Fix:              "Allow only TLS 1.2 and 1.3. In nginx set ssl_protocols TLSv1.2 TLSv1.3; in Apache set SSLProtocol -all +TLSv1.2 +TLSv1.3.",
+		RemediationTitle: "Disable older TLS versions",
+		Ports:            []int{443, 465, 636, 993, 995, 8443},
+		Services:         append([]string{"http", "http-alt", "http-proxy"}, tlsNames...),
 	}
 }
 
