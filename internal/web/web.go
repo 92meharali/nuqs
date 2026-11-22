@@ -580,9 +580,13 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 			data.Looks = strings.Join(looks, " · ")
 		}
 	}
+	returnTab := "vulns"
+	if r.URL.Query().Get("from") == "fixes" {
+		returnTab = "fixes"
+	}
 	h.render(w, "finding.html", page{
 		Title: data.Title, Nav: "scans",
-		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: s.Name, Href: "/scans/" + s.ID + "?tab=vulns"}, {Label: data.Title}},
+		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: s.Name, Href: "/scans/" + s.ID + "?tab=" + returnTab}, {Label: data.Title}},
 		Data:   data,
 	})
 }
