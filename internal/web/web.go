@@ -285,17 +285,69 @@ type vulnRow struct {
 	Hosts    int
 }
 
+type fixRow struct {
+	Fix      string
+	Severity string
+	Findings int
+	Hosts    int
+	Checks   []vulnRow
+}
+
+func groupByFix(findings []model.Finding) []fixRow {
+	type fixKey struct{ text, check string }
+	type group struct {
+		row     fixRow
+		highest model.Severity
+		hosts   map[string]bool
+		checks  map[string]vulnRow
+	}
+	groups := map[fixKey]*group{}
+	for _, finding := range findings {
+		key := fixKey{text: strings.TrimSpace(finding.Fix)}
+		if key.text == "" {
+			key.check = finding.CheckID
+		}
+		g := groups[key]
+		if g == nil {
+			g = &group{row: fixRow{Fix: key.text}, highest: finding.Severity, hosts: map[string]bool{}, checks: map[string]vulnRow{}}
+			groups[key] = g
+		}
+		g.highest = max(g.highest, finding.Severity)
+		g.row.Findings++
+		g.hosts[finding.Host] = true
+		g.checks[finding.CheckID] = vulnRow{CheckID: finding.CheckID, Title: finding.Title}
+	}
+	rows := make([]fixRow, 0, len(groups))
+	for _, g := range groups {
+		g.row.Severity = g.highest.String()
+		g.row.Hosts = len(g.hosts)
+		for _, check := range g.checks {
+			g.row.Checks = append(g.row.Checks, check)
+		}
+		slices.SortFunc(g.row.Checks, func(a, b vulnRow) int {
+			return cmp.Or(cmp.Compare(a.Title, b.Title), cmp.Compare(a.CheckID, b.CheckID))
+		})
+		rows = append(rows, g.row)
+	}
+	slices.SortFunc(rows, func(a, b fixRow) int {
+		return cmp.Or(cmp.Compare(severityRank(a.Severity), severityRank(b.Severity)),
+			cmp.Compare(a.Fix, b.Fix), cmp.Compare(a.Checks[0].CheckID, b.Checks[0].CheckID))
+	})
+	return rows
+}
+
 type detail struct{ Label, Value string }
 
 type scanData struct {
 	tools.Scan
-	Tab     string // "hosts" or "vulns"
+	Tab     string
 	Label   string
 	Class   string
 	Counts  sevCounts
 	Donut   template.CSS
 	Hosts   []hostRow
 	Vulns   []vulnRow
+	Fixes   []fixRow
 	Errors  []engine.CheckError
 	Details []detail
 }
@@ -307,13 +359,16 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := scanData{Scan: s, Tab: "hosts", Label: statusLabel(s), Class: statusClass(s), Counts: countOf(s.Report)}
-	if r.URL.Query().Get("tab") == "vulns" {
-		data.Tab = "vulns"
+	if tab := r.URL.Query().Get("tab"); tab == "vulns" || tab == "fixes" {
+		data.Tab = tab
 	}
 	data.Donut = donut(data.Counts)
 	data.Details = scanDetails(s)
 	if rep := s.Report; rep != nil {
 		data.Errors = rep.Errors
+		if data.Tab == "fixes" {
+			data.Fixes = groupByFix(rep.Findings)
+		}
 		for _, host := range rep.Hosts {
 			row := hostRow{Address: host.Address, Hostnames: host.Hostnames, Open: len(host.Services)}
 			for _, f := range rep.Findings {

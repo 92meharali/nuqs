@@ -27,6 +27,7 @@
       <nav class="segmented" aria-label="Results">
         <a href="/scans/{{.ID}}"{{if eq .Tab "hosts"}} aria-current="page"{{end}}>Hosts <span class="count">{{len .Hosts}}</span></a>
         <a href="/scans/{{.ID}}?tab=vulns"{{if eq .Tab "vulns"}} aria-current="page"{{end}}>Vulnerabilities <span class="count">{{len .Vulns}}</span></a>
+        <a href="/scans/{{.ID}}?tab=fixes"{{if eq .Tab "fixes"}} aria-current="page"{{end}}>By fix</a>
       </nav>
       {{if eq .Tab "hosts"}}
       <div class="tableCard">
@@ -38,6 +39,20 @@
             <td>{{template "sevbar" .Counts}}</td>
           </tr>{{end}}</tbody>
         </table>{{else}}<p class="emptyRow">No hosts answered. If they block ping, turn on "Scan hosts even if they don't answer ping" under Discovery.</p>{{end}}
+      </div>
+      {{else if eq .Tab "fixes"}}
+      <div class="tableCard">
+        {{if .Fixes}}<table class="list">
+          <thead><tr><th>Highest severity</th><th class="wide">Fix</th><th>Findings</th><th>Hosts</th></tr></thead>
+          <tbody>{{$id := .ID}}{{range .Fixes}}<tr>
+            <td><span class="badge {{badgeClass .Severity}}">{{.Severity}}</span></td>
+            <td>{{if .Fix}}<strong>{{.Fix}}</strong>{{else}}<strong>No fix guidance available</strong>{{end}}
+              <ul>{{range .Checks}}<li><a href="/scans/{{$id}}/vulns/{{.CheckID}}">{{.Title}}</a></li>{{end}}</ul>
+            </td>
+            <td>{{.Findings}}</td>
+            <td>{{.Hosts}}</td>
+          </tr>{{end}}</tbody>
+        </table>{{else}}<p class="emptyRow">No findings to group by fix.</p>{{end}}
       </div>
       {{else}}
       <div class="tableCard">

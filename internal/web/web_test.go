@@ -247,6 +247,31 @@ func TestCompletedScanPages(t *testing.T) {
 	}
 }
 
+func TestByFix(t *testing.T) {
+	h := newTestWeb(t, &fakeRunner{xml: scanXML})
+	scan := startAndWait(t, h, "Lab box")
+	_, body := get(t, h, "/scans/"+scan.ID+"?tab=fixes")
+	mustContain(t, "fixes tab", body, `aria-current="page">By fix`, "Highest severity", "Unencrypted Telnet", `href="/scans/`+scan.ID+`/vulns/telnet-open"`)
+}
+
+func TestGroupByFix(t *testing.T) {
+	rows := groupByFix([]model.Finding{
+		{CheckID: "a", Fix: "Shared fix", Severity: model.Low, Host: "one", Port: 80},
+		{CheckID: "a", Fix: "Shared fix", Severity: model.Low, Host: "one", Port: 443},
+		{CheckID: "b", Fix: "Shared fix", Severity: model.High, Host: "two"},
+		{CheckID: "c", Fix: "Other fix", Severity: model.Medium, Host: "one"},
+		{CheckID: "d", Severity: model.Info, Host: "one"},
+		{CheckID: "e", Severity: model.Info, Host: "one"},
+	})
+	if len(rows) != 4 || rows[0].Fix != "Shared fix" || rows[0].Severity != "high" ||
+		rows[0].Findings != 3 || rows[0].Hosts != 2 || len(rows[0].Checks) != 2 || rows[1].Fix != "Other fix" {
+		t.Fatalf("unexpected remediation groups: %+v", rows)
+	}
+	if rows := groupByFix(nil); len(rows) != 0 {
+		t.Fatalf("empty report produced groups: %+v", rows)
+	}
+}
+
 func TestRunningAndFailedScan(t *testing.T) {
 	runner := &fakeRunner{xml: scanXML, release: make(chan struct{})}
 	h := newTestWeb(t, runner)
