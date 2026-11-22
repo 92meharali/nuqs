@@ -3,7 +3,8 @@
 //
 // It reads every Go file's package doc comment and imports, and lists every
 // file in the repo. Nothing is typed by hand, so the page can't drift from
-// the code. CI runs it on every push and commits the result if it changed.
+// the code. The docs build runs it (scripts/docs.sh), and the page isn't
+// committed, so the repo stays light.
 //
 // Run it from the repo root:
 //
@@ -30,6 +31,12 @@ func run(root string, check bool) int {
 	repo, err := Scan(root)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "archdiagram:", err)
+		return 1
+	}
+	if problems := LayerProblems(repo, layers); len(problems) > 0 {
+		for _, p := range problems {
+			fmt.Fprintln(os.Stderr, "archdiagram:", p)
+		}
 		return 1
 	}
 	page := []byte(Render(repo))

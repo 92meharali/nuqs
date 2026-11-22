@@ -248,6 +248,50 @@ func TestCompletedScanPages(t *testing.T) {
 	}
 }
 
+func TestFindingFilters(t *testing.T) {
+	h := newTestWeb(t, &fakeRunner{xml: scanXML})
+	scan := startAndWait(t, h, "Filtered scan")
+	url := "/scans/" + scan.ID + "?tab=vulns"
+	_, body := get(t, h, url+"&severity=medium&confidence=confirmed")
+	mustContain(t, "matching filters", body, "Showing 1 of 1 vulnerabilities", `value="medium" selected`, `value="confirmed" selected`, "Unencrypted Telnet", "Clear filters")
+	_, body = get(t, h, url+"&severity=medium&confidence=inferred")
+	mustContain(t, "no matches", body, "Showing 0 of 1 vulnerabilities", "No findings match these filters.")
+	if strings.Contains(body, `/vulns/telnet-open`) {
+		t.Error("nonmatching finding is linked")
+	}
+	for _, suffix := range []string{"", "&severity=bogus&confidence=bogus"} {
+		_, body = get(t, h, url+suffix)
+		mustContain(t, "unfiltered", body, "Unencrypted Telnet")
+		if strings.Contains(body, "Clear filters") || strings.Contains(body, "findingMatchCount") {
+			t.Errorf("inactive filters displayed for %q", suffix)
+		}
+	}
+	detail := "/scans/" + scan.ID + "/vulns/telnet-open"
+	_, body = get(t, h, url+"&confidence=confirmed&severity=medium")
+	mustContain(t, "filtered link", body, detail+"?confidence=confirmed&amp;severity=medium")
+	_, body = get(t, h, detail+"?confidence=confirmed&severity=medium")
+	mustContain(t, "detail and return link", body, "Found on 1 host", url+"&amp;confidence=confirmed&amp;severity=medium")
+	_, body = get(t, h, detail+"?confidence=inferred")
+	mustContain(t, "filtered detail", body, "No findings match these filters.")
+
+}
+
+func TestGroupedFindingHostCount(t *testing.T) {
+	confirmed := model.Finding{CheckID: "example", Host: "host-a", Severity: model.High, Confidence: model.Confirmed, Port: 80}
+	secondPort := confirmed
+	secondPort.Port = 443
+	inferred := confirmed
+	inferred.Host = "host-b"
+	inferred.Confidence = model.Inferred
+	low := confirmed
+	low.CheckID = "low"
+	low.Severity = model.Low
+	rows := groupFindings([]model.Finding{confirmed, secondPort, inferred, low}, findingFilters{Severity: "high", Confidence: model.Confirmed})
+	if len(rows) != 1 || rows[0].Hosts != 1 {
+		t.Fatalf("want one group on one host, got %+v", rows)
+	}
+}
+
 func TestByFix(t *testing.T) {
 	h := newTestWeb(t, &fakeRunner{xml: scanXML})
 	scan := startAndWait(t, h, "Lab box")

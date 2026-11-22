@@ -17,6 +17,7 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"slices"
 	"strconv"
 	"strings"
@@ -286,6 +287,72 @@ type vulnRow struct {
 	Hosts    int
 }
 
+type findingFilters struct {
+	Severity   string
+	Confidence model.Confidence
+}
+
+func (f findingFilters) Active() bool { return f.Severity != "" || f.Confidence != "" }
+
+func readFindingFilters(query url.Values) findingFilters {
+	var filters findingFilters
+	if severity, err := model.ParseSeverity(query.Get("severity")); err == nil {
+		filters.Severity = severity.String()
+	}
+	if confidence := model.Confidence(query.Get("confidence")); confidence.Valid() {
+		filters.Confidence = confidence
+	}
+	return filters
+}
+
+func (f findingFilters) matches(finding model.Finding) bool {
+	return (f.Severity == "" || finding.Severity.String() == f.Severity) &&
+		(f.Confidence == "" || finding.Confidence == f.Confidence)
+}
+
+func (f findingFilters) DetailQuery() string {
+	if !f.Active() {
+		return ""
+	}
+	query := url.Values{}
+	if f.Severity != "" {
+		query.Set("severity", f.Severity)
+	}
+	if f.Confidence != "" {
+		query.Set("confidence", string(f.Confidence))
+	}
+	return "?" + query.Encode()
+}
+
+func groupFindings(findings []model.Finding, filters findingFilters) []vulnRow {
+	byCheck := map[string]*vulnRow{}
+	type checkHost struct{ check, host string }
+	seen := map[checkHost]bool{}
+	for _, f := range findings {
+		if !filters.matches(f) {
+			continue
+		}
+		row := byCheck[f.CheckID]
+		if row == nil {
+			row = &vulnRow{CheckID: f.CheckID, Title: f.Title, Severity: f.Severity.String()}
+			byCheck[f.CheckID] = row
+		}
+		key := checkHost{f.CheckID, f.Host}
+		if !seen[key] {
+			row.Hosts++
+			seen[key] = true
+		}
+	}
+	rows := make([]vulnRow, 0, len(byCheck))
+	for _, row := range byCheck {
+		rows = append(rows, *row)
+	}
+	slices.SortFunc(rows, func(a, b vulnRow) int {
+		return cmp.Or(cmp.Compare(severityRank(a.Severity), severityRank(b.Severity)), cmp.Compare(a.Title, b.Title), cmp.Compare(a.CheckID, b.CheckID))
+	})
+	return rows
+}
+
 type fixInstruction struct {
 	CheckID, Title, Text string
 }
@@ -358,16 +425,18 @@ type detail struct{ Label, Value string }
 
 type scanData struct {
 	tools.Scan
-	Tab     string // "hosts", "vulns" or "fixes"
-	Label   string
-	Class   string
-	Counts  sevCounts
-	Donut   template.CSS
-	Hosts   []hostRow
-	Vulns   []vulnRow
-	Fixes   []fixRow
-	Errors  []engine.CheckError
-	Details []detail
+	Tab        string // "hosts", "vulns" or "fixes"
+	Label      string
+	Class      string
+	Counts     sevCounts
+	Donut      template.CSS
+	Hosts      []hostRow
+	Vulns      []vulnRow
+	Fixes      []fixRow
+	Filters    findingFilters
+	TotalVulns int
+	Errors     []engine.CheckError
+	Details    []detail
 }
 
 func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
@@ -377,8 +446,12 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := scanData{Scan: s, Tab: "hosts", Label: statusLabel(s), Class: statusClass(s), Counts: countOf(s.Report)}
-	if tab := r.URL.Query().Get("tab"); tab == "vulns" || tab == "fixes" {
-		data.Tab = tab
+	query := r.URL.Query()
+	if query.Get("tab") == "vulns" {
+		data.Tab = "vulns"
+		data.Filters = readFindingFilters(query)
+	} else if query.Get("tab") == "fixes" {
+		data.Tab = "fixes"
 	}
 	data.Donut = donut(data.Counts)
 	data.Details = scanDetails(s)
@@ -394,22 +467,12 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 			}
 			data.Hosts = append(data.Hosts, row)
 		}
-		// One row per problem, with how many hosts have it, worst first.
-		byCheck := map[string]*vulnRow{}
-		for _, f := range rep.Findings {
-			v := byCheck[f.CheckID]
-			if v == nil {
-				v = &vulnRow{CheckID: f.CheckID, Title: f.Title, Severity: f.Severity.String()}
-				byCheck[f.CheckID] = v
-			}
-			v.Hosts++
+		all := groupFindings(rep.Findings, findingFilters{})
+		data.TotalVulns = len(all)
+		data.Vulns = all
+		if data.Filters.Active() {
+			data.Vulns = groupFindings(rep.Findings, data.Filters)
 		}
-		for _, v := range byCheck {
-			data.Vulns = append(data.Vulns, *v)
-		}
-		slices.SortFunc(data.Vulns, func(a, b vulnRow) int {
-			return cmp.Or(cmp.Compare(severityRank(a.Severity), severityRank(b.Severity)), cmp.Compare(a.Title, b.Title))
-		})
 		slices.SortFunc(data.Hosts, func(a, b hostRow) int {
 			return cmp.Or(cmp.Compare(b.Counts.Critical, a.Counts.Critical), cmp.Compare(b.Counts.High, a.Counts.High),
 				cmp.Compare(b.Counts.Total(), a.Counts.Total()), cmp.Compare(a.Address, b.Address))
@@ -550,6 +613,7 @@ type findingData struct {
 	Fix       string
 	Looks     string // what the check looks at, like "ports 23 · telnet"
 	Instances []model.Finding
+	HostCount int
 }
 
 func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
@@ -560,15 +624,31 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 	}
 	id := r.PathValue("check")
 	data := findingData{ScanID: s.ID, ScanName: s.Name, CheckID: id}
+	filters := readFindingFilters(r.URL.Query())
+	hosts := map[string]bool{}
 	for _, f := range s.Report.Findings {
-		if f.CheckID == id {
-			data.Instances = append(data.Instances, f)
+		if f.CheckID != id {
+			continue
+		}
+		if data.Title == "" || filters.matches(f) {
 			data.Title, data.Severity, data.Fix = f.Title, f.Severity.String(), f.Fix
 		}
+		if filters.matches(f) {
+			data.Instances = append(data.Instances, f)
+			hosts[f.Host] = true
+		}
 	}
-	if len(data.Instances) == 0 {
+	if data.Severity == "" {
 		http.NotFound(w, r)
 		return
+	}
+	data.HostCount = len(hosts)
+	back := "/scans/" + s.ID + "?tab=vulns"
+	if filters.Active() {
+		back += "&" + strings.TrimPrefix(filters.DetailQuery(), "?")
+	}
+	if r.URL.Query().Get("from") == "fixes" {
+		back = "/scans/" + s.ID + "?tab=fixes"
 	}
 	for _, c := range h.Service.ListChecks() {
 		if c.ID == id {
@@ -580,13 +660,9 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 			data.Looks = strings.Join(looks, " · ")
 		}
 	}
-	returnTab := "vulns"
-	if r.URL.Query().Get("from") == "fixes" {
-		returnTab = "fixes"
-	}
 	h.render(w, "finding.html", page{
 		Title: data.Title, Nav: "scans",
-		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: s.Name, Href: "/scans/" + s.ID + "?tab=" + returnTab}, {Label: data.Title}},
+		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: s.Name, Href: back}, {Label: data.Title}},
 		Data:   data,
 	})
 }
