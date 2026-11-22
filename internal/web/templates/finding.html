@@ -11,7 +11,8 @@
     <button type="button" class="copy" data-fix="{{.Fix}}">Copy fix</button>
     {{if .Looks}}<p class="small subtle">This check looks at {{.Looks}}.</p>{{end}}
   </div>
-  <h2 class="groupTitle">Found on {{len .Instances}} {{if eq (len .Instances) 1}}host{{else}}hosts{{end}}</h2>
+  {{if .Instances}}
+  <h2 class="groupTitle">Found on {{.HostCount}} {{if eq .HostCount 1}}host{{else}}hosts{{end}}</h2>
   <div class="tableCard">
     <table class="list">
       <thead><tr><th>Host</th><th class="wide">What we saw</th><th>Confidence</th></tr></thead>
@@ -22,5 +23,6 @@
       </tr>{{end}}</tbody>
     </table>
   </div>
+  {{else}}<p class="emptyRow">No findings match these filters.</p>{{end}}
 </section>
 {{end}}{{end}}
