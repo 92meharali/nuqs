@@ -27,7 +27,7 @@
       <nav class="segmented" aria-label="Results">
         <a href="/scans/{{.ID}}"{{if eq .Tab "hosts"}} aria-current="page"{{end}}>Hosts <span class="count">{{len .Hosts}}</span></a>
         <a href="/scans/{{.ID}}?tab=vulns"{{if eq .Tab "vulns"}} aria-current="page"{{end}}>Vulnerabilities <span class="count">{{len .Vulns}}</span></a>
-        <a href="/scans/{{.ID}}?tab=fixes"{{if eq .Tab "fixes"}} aria-current="page"{{end}}>By fix <span class="count">{{len .Fixes}}</span></a>
+        <a href="/scans/{{.ID}}?tab=fixes"{{if eq .Tab "fixes"}} aria-current="page"{{end}}>By Fix <span class="count">{{len .Fixes}}</span></a>
       </nav>
       {{if eq .Tab "hosts"}}
       <div class="tableCard">
