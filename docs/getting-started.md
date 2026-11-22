@@ -78,7 +78,6 @@ Then open http://127.0.0.1:9002. On the first start (when no accounts exist yet)
 - **Listening on the network (HTTPS):** plain HTTP only listens on this computer (`127.0.0.1` / `localhost`). To let teammates connect from their laptops over HTTPS, start with `./nuqs serve --addr 0.0.0.0:9002 --tls-self-signed` (or pass `--tls-cert` and `--tls-key`).
 - **Allowed scan targets:** by default it only scans this computer (`127.0.0.0/8`). To scan your network too, start it with `./nuqs serve --allow 192.168.1.0/24`.
 - One scan runs at a time. The last 50 are kept until you stop the server.
-- Full details on setup codes, roles, password recovery, API endpoints and HTTPS flags are in [Accounts, roles & HTTPS](auth.md).
 
 ## Other commands
 

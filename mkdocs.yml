@@ -32,7 +32,6 @@ extra_css:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
-  - Accounts & HTTPS: auth.md
   - How it works: how-it-works.md
   - Architecture: architecture.md
   - Writing a check: writing-a-check.md
