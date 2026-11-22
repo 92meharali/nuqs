@@ -62,16 +62,16 @@
         <button type="submit">Apply filters</button>
         {{if .Filters.Active}}<a href="/scans/{{.ID}}?tab=vulns">Clear filters</a>{{end}}
       </form>
-      <p class="findingMatchCount">{{.Matches}} of {{len .Report.Findings}} findings match</p>
+      {{if .Filters.Active}}<p class="findingMatchCount">Showing {{len .Vulns}} of {{.TotalVulns}} vulnerabilities</p>{{end}}
       <div class="tableCard">
         {{if .Vulns}}<table class="list">
           <thead><tr><th class="narrow">Severity</th><th class="wide">Name</th><th>Hosts</th></tr></thead>
-          <tbody>{{$id := .ID}}{{range .Vulns}}<tr class="rowLink">
+          <tbody>{{$id := .ID}}{{$filters := .Filters.DetailQuery}}{{range .Vulns}}<tr class="rowLink">
             <td><span class="badge {{badgeClass .Severity}}">{{.Severity}}</span></td>
-            <td><a href="/scans/{{$id}}/vulns/{{.CheckID}}"><strong>{{.Title}}</strong></a><small class="mono">{{.CheckID}}</small></td>
+            <td><a href="/scans/{{$id}}/vulns/{{.CheckID}}{{$filters}}"><strong>{{.Title}}</strong></a><small class="mono">{{.CheckID}}</small></td>
             <td>{{.Hosts}}</td>
           </tr>{{end}}</tbody>
-        </table>{{else}}<p class="emptyRow">{{if .Filters.Active}}No findings match these filters.{{else}}No findings were reported.{{end}}</p>{{end}}
+        </table>{{else}}<p class="emptyRow">{{if .Filters.Active}}No findings match these filters.{{else}}Nothing found. Every check that ran came back clean.{{end}}</p>{{end}}
       </div>
       {{end}}
       {{if .Errors}}
