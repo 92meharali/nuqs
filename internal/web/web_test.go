@@ -252,7 +252,7 @@ func TestByFix(t *testing.T) {
 	h := newTestWeb(t, &fakeRunner{xml: scanXML})
 	scan := startAndWait(t, h, "Lab box")
 	_, body := get(t, h, "/scans/"+scan.ID+"?tab=fixes")
-	mustContain(t, "fixes tab", body, `aria-current="page">By fix`, "Highest severity", `By fix <span class="count">1</span>`, `<details class="fixDetails">`, `data-fix="`, "Unencrypted Telnet", `href="/scans/`+scan.ID+`/vulns/telnet-open"`)
+	mustContain(t, "fixes tab", body, `aria-current="page">By fix`, "Highest severity", `By fix <span class="count">1</span>`, `<table class="list fixList">`, `<details class="fixDetails">`, `data-fix="`, "Unencrypted Telnet", `href="/scans/`+scan.ID+`/vulns/telnet-open"`)
 }
 
 func TestGroupByFix(t *testing.T) {

@@ -42,7 +42,7 @@
       </div>
       {{else if eq .Tab "fixes"}}
       <div class="tableCard">
-        {{if .Fixes}}<table class="list">
+        {{if .Fixes}}<table class="list fixList">
           <thead><tr><th>Highest severity</th><th class="wide">Fix</th><th>Findings</th><th>Hosts</th></tr></thead>
           <tbody>{{$id := .ID}}{{range .Fixes}}<tr>
             <td><span class="badge {{badgeClass .Severity}}">{{.Severity}}</span></td>
