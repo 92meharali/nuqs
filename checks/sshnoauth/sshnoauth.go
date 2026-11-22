@@ -34,6 +34,7 @@ func (Check) Info() check.Info {
 		Fix:              "Make the SSH server ask for a key or password for every login (in OpenSSH, set PermitEmptyPasswords no). On a device where you can't change that, update its firmware or turn SSH off.",
 		RemediationID:    "ssh-public-key-only",
 		RemediationTitle: "Require SSH public-key authentication",
+		RemediationFix:   check.SSHKeyOnlyFix,
 		Ports:            []int{22},
 		Services:         []string{"ssh"},
 	}

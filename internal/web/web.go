@@ -291,6 +291,7 @@ type fixInstruction struct {
 }
 
 type fixRow struct {
+	SharedFix    string
 	Title        string
 	Severity     string
 	Findings     int
@@ -325,7 +326,7 @@ func groupByFix(findings []model.Finding, checks []check.Check) []fixRow {
 			if title == "" {
 				title = finding.Title
 			}
-			g = &group{row: fixRow{Title: title}, highest: finding.Severity, hosts: map[string]bool{}, instructions: map[fixInstruction]bool{}}
+			g = &group{row: fixRow{Title: title, SharedFix: info.RemediationFix}, highest: finding.Severity, hosts: map[string]bool{}, instructions: map[fixInstruction]bool{}}
 			groups[key] = g
 		}
 		g.highest = max(g.highest, finding.Severity)

@@ -49,9 +49,13 @@
             <td>
               <details class="fixDetails">
                 <summary><strong>{{.Title}}</strong></summary>
+                {{$sharedFix := .SharedFix}}{{if $sharedFix}}<div>
+                  <p>{{$sharedFix}}</p><button type="button" class="copy" data-fix="{{$sharedFix}}">Copy fix</button>
+                  <p><strong>Check-specific guidance</strong></p>
+                </div>{{end}}
                 {{range .Instructions}}<div>
                   <a href="/scans/{{$id}}/vulns/{{.CheckID}}">{{.Title}}</a>
-                  {{if .Text}}<p>{{.Text}}</p><button type="button" class="copy" data-fix="{{.Text}}">Copy fix</button>
+                  {{if .Text}}<p>{{.Text}}</p><button type="button" class="copy" data-fix="{{.Text}}"{{if $sharedFix}} data-copy-label="Copy check guidance"{{end}}>{{if $sharedFix}}Copy check guidance{{else}}Copy fix{{end}}</button>
                   {{else}}<p>No fix guidance available.</p>{{end}}
                 </div>{{end}}
               </details>

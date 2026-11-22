@@ -276,7 +276,7 @@ func TestGroupByFix(t *testing.T) {
 	rows := groupByFix(findings, registered)
 	if len(rows) != 3 || rows[0].Title != "Require SSH public-key authentication" || rows[0].Severity != "critical" ||
 		rows[0].Findings != 3 || rows[0].Hosts != 2 || len(rows[0].Instructions) != 2 ||
-		rows[0].Instructions[0].Text == rows[0].Instructions[1].Text {
+		rows[0].SharedFix != check.SSHKeyOnlyFix || rows[0].Instructions[0].Text == rows[0].Instructions[1].Text {
 		t.Fatalf("unexpected remediation groups: %+v", rows)
 	}
 	if rows := groupByFix(nil, nil); len(rows) != 0 {

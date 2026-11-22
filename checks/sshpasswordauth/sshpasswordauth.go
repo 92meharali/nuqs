@@ -41,6 +41,7 @@ func (Check) Info() check.Info {
 		Fix:              "Use SSH keys and set PasswordAuthentication no in sshd_config. Passwords can be guessed, keys can't.",
 		RemediationID:    "ssh-public-key-only",
 		RemediationTitle: "Require SSH public-key authentication",
+		RemediationFix:   check.SSHKeyOnlyFix,
 		Ports:            []int{22},
 		Services:         []string{"ssh"},
 	}

@@ -27,12 +27,16 @@ type Info struct {
 	// Share a remediation ID only when one action addresses both checks.
 	RemediationID    string
 	RemediationTitle string
+	RemediationFix   string // instructions for the shared action
 
 	// Where the check applies. A service matches if its port is in Ports OR
 	// its Nmap service name is in Services. Leave both empty to match every service.
 	Ports    []int
 	Services []string
 }
+
+// SSHKeyOnlyFix is the shared remediation for SSH credential-free and password login.
+const SSHKeyOnlyFix = "Require public-key authentication as the only SSH login method. First verify that an authorized key works and keep an existing admin session open. For OpenSSH, enable PubkeyAuthentication and set AuthenticationMethods publickey. Validate the configuration before reloading and verify a new key-only login before closing your admin session."
 
 // Target is what a check runs against: one host and one of its services.
 type Target struct {
