@@ -1,6 +1,6 @@
 <!-- One scan: hosts and vulnerabilities tabs, with scan details and the severity ring on the side. -->
-{{define "actions"}}{{with .Data}}{{if eq .Status "running"}}<button type="button" id="stopScan" data-id="{{.ID}}">Stop</button>{{else if .Report}}<a class="button" href="/api/scans/{{.ID}}/report" download>Download JSON</a>{{end}}<a class="button primary" href="/scans/new">New scan</a>{{end}}{{end}}
-{{define "content"}}{{with .Data}}
+{{define "actions"}}{{$canScan := .CanScan}}{{with .Data}}{{if eq .Status "running"}}{{if $canScan}}<button type="button" id="stopScan" data-id="{{.ID}}">Stop</button>{{end}}{{else if .Report}}<a class="button" href="/api/scans/{{.ID}}/report" download>Download JSON</a>{{end}}{{if $canScan}}<a class="button primary" href="/scans/new">New scan</a>{{end}}{{end}}{{end}}
+{{define "content"}}{{$canScan := .CanScan}}{{with .Data}}
 <section class="page" {{if eq .Status "running"}}data-watch="{{.ID}}"{{end}}>
   <div class="pageHead">
     <h1>{{.Name}}</h1>
@@ -61,7 +61,7 @@
       {{else if eq .Status "running"}}
       <p class="emptyRow">Hosts and findings show up here when the scan finishes.</p>
       {{else if eq .Status "stopped"}}
-      <p class="emptyRow card">Stopped before Nmap finished finding hosts, so there's nothing to show. <a href="/scans/new">Start a new scan</a></p>
+      <p class="emptyRow card">Stopped before Nmap finished finding hosts, so there's nothing to show.{{if $canScan}} <a href="/scans/new">Start a new scan</a>{{end}}</p>
       {{end}}
     </div>
     <aside class="card detailsCard">

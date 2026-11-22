@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nuqs-org/nuqs/internal/auth"
 	"github.com/nuqs-org/nuqs/internal/engine"
 	"github.com/nuqs-org/nuqs/internal/model"
 	"github.com/nuqs-org/nuqs/internal/tools"
@@ -34,18 +35,26 @@ var severityLevels = []string{"critical", "high", "medium", "low", "info"}
 
 const cspPolicy = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
 
-// pages are the full pages, each one fills the "content" block of layout.html.
-var pages = []string{"scans.html", "new.html", "settings.html", "scan.html", "host.html", "finding.html", "checks.html"}
+// pages are the full workspace pages, each filling the "content" block of layout.html.
+var pages = []string{"scans.html", "new.html", "settings.html", "scan.html", "host.html", "finding.html", "checks.html", "users.html"}
+
+// authPages are standalone screens rendered without workspace chrome.
+var authPages = []string{"setup.html", "login.html", "reset_password.html"}
 
 // Handler serves the embedded Nuqs web UI pages, htmx partials and static assets.
 type Handler struct {
 	Service *tools.Service
 	Scans   *tools.Scans
 	Addr    string
+	// Auth enables accounts, sessions, RBAC and user management pages when non-nil.
+	Auth *auth.Service
+	// HTTPS reports whether the server is listening over TLS.
+	HTTPS bool
 
-	pages  map[string]*template.Template
-	parts  *template.Template
-	static http.Handler
+	pages     map[string]*template.Template
+	authPages map[string]*template.Template
+	parts     *template.Template
+	static    http.Handler
 }
 
 // New parses the embedded templates and returns a ready web Handler.
@@ -58,12 +67,24 @@ func New(svc *tools.Service, scans *tools.Scans, addr string) (*Handler, error) 
 		"clock":      func(t time.Time) string { return t.Local().Format("Jan 2, 15:04:05") },
 		"lower":      strings.ToLower,
 		"whole":      func(f float64) int { return int(f) },
+		"initials":   userInitials,
 	}
 	base, err := template.New("").Funcs(funcs).ParseFS(assets, "templates/layout.html", "templates/parts.html", "templates/checks_library.html")
 	if err != nil {
 		return nil, fmt.Errorf("web: parse templates: %w", err)
 	}
-	h := &Handler{Service: svc, Scans: scans, Addr: addr, pages: map[string]*template.Template{}, parts: base}
+	authBase, err := template.New("").Funcs(funcs).ParseFS(assets, "templates/auth_layout.html")
+	if err != nil {
+		return nil, fmt.Errorf("web: parse auth layout: %w", err)
+	}
+	h := &Handler{
+		Service:   svc,
+		Scans:     scans,
+		Addr:      addr,
+		pages:     map[string]*template.Template{},
+		authPages: map[string]*template.Template{},
+		parts:     base,
+	}
 	for _, name := range pages {
 		t, err := base.Clone()
 		if err == nil {
@@ -73,6 +94,16 @@ func New(svc *tools.Service, scans *tools.Scans, addr string) (*Handler, error) 
 			return nil, fmt.Errorf("web: parse %s: %w", name, err)
 		}
 		h.pages[name] = t
+	}
+	for _, name := range authPages {
+		t, err := authBase.Clone()
+		if err == nil {
+			t, err = t.ParseFS(assets, "templates/"+name)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("web: parse %s: %w", name, err)
+		}
+		h.authPages[name] = t
 	}
 	staticFS, err := fs.Sub(assets, "static")
 	if err != nil {
@@ -95,17 +126,26 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /scans/{id}/vulns/{check}", h.findingPage)
 	mux.HandleFunc("GET /checks", h.checksPage)
 	mux.HandleFunc("GET /partials/checks", h.checksPartial)
+	mux.HandleFunc("GET /favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/static/nuqs-logo.png", http.StatusMovedPermanently)
+	})
 	mux.Handle("GET /static/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Cache-Control", "public, max-age=3600")
 		h.static.ServeHTTP(w, r)
 	}))
+	h.registerAuth(mux)
 }
 
 // ServeHTTP dispatches web requests on a standalone handler.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux := http.NewServeMux()
 	h.Register(mux)
-	mux.ServeHTTP(w, r)
+	var handler http.Handler = mux
+	if h.Auth != nil {
+		handler = h.Auth.Gate(handler)
+	}
+	handler.ServeHTTP(w, r)
 }
 
 // crumb is one step in the toolbar path, like "Scans / Office router".
@@ -116,21 +156,59 @@ type crumb struct {
 
 // page is what layout.html needs, plus the page's own data in Data.
 type page struct {
-	Title  string
-	Nav    string // which sidebar item is selected: "scans" or "checks"
-	Crumbs []crumb
-	Status tools.Status
-	Data   any
+	Title       string
+	Nav         string // which sidebar item is selected: "scans", "checks" or "users"
+	Crumbs      []crumb
+	Status      tools.Status
+	User        *auth.Principal
+	IsAdmin     bool
+	CanScan     bool
+	FlashNotice string
+	FlashError  string
+	Data        any
 }
 
-func (h *Handler) render(w http.ResponseWriter, name string, p page) {
+func (h *Handler) render(w http.ResponseWriter, r *http.Request, name string, p page) {
+	h.renderStatus(w, r, http.StatusOK, name, p)
+}
+
+func (h *Handler) renderStatus(w http.ResponseWriter, r *http.Request, status int, name string, p page) {
 	p.Status = h.Service.Status(h.Addr)
+	if h.Auth != nil {
+		if principal, ok := auth.PrincipalFromContext(r.Context()); ok {
+			copyP := principal
+			p.User = &copyP
+			p.IsAdmin = principal.IsAdmin()
+			p.CanScan = principal.CanScan()
+		}
+	} else {
+		p.CanScan = true
+	}
+	if p.FlashNotice == "" {
+		p.FlashNotice = noticeText(r.URL.Query().Get("notice"))
+	}
 	var buf bytes.Buffer
 	if err := h.pages[name].ExecuteTemplate(&buf, "layout", p); err != nil {
 		http.Error(w, "template error", http.StatusInternalServerError)
 		return
 	}
-	writeHTML(w, buf.Bytes())
+	h.writeHTMLStatus(w, r, status, buf.Bytes())
+}
+
+func (h *Handler) writeHTMLStatus(w http.ResponseWriter, r *http.Request, status int, body []byte) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", cspPolicy)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "DENY")
+	w.Header().Set("Referrer-Policy", "same-origin")
+	w.Header().Set("Cache-Control", "no-store")
+	if h.HTTPS || (r != nil && r.TLS != nil) {
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+	}
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
+	_, _ = w.Write(body)
 }
 
 func writeHTML(w http.ResponseWriter, body []byte) {
@@ -138,7 +216,8 @@ func writeHTML(w http.ResponseWriter, body []byte) {
 	w.Header().Set("Content-Security-Policy", cspPolicy)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "DENY")
-	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("Referrer-Policy", "same-origin")
+	w.Header().Set("Cache-Control", "no-store")
 	_, _ = w.Write(body)
 }
 
@@ -157,7 +236,7 @@ type scansData struct {
 	SuggestedTarget string
 }
 
-func (h *Handler) scansPage(w http.ResponseWriter, _ *http.Request) {
+func (h *Handler) scansPage(w http.ResponseWriter, r *http.Request) {
 	data := scansData{SuggestedTarget: suggestedTarget(h.Service.AllowedScope)}
 	for _, s := range h.Scans.List() {
 		if s.Status == tools.ScanRunning {
@@ -165,7 +244,7 @@ func (h *Handler) scansPage(w http.ResponseWriter, _ *http.Request) {
 		}
 		data.Rows = append(data.Rows, scanRow{Scan: s, Label: statusLabel(s), Class: statusClass(s), Counts: countOf(s.Report)})
 	}
-	h.render(w, "scans.html", page{Title: "Scans", Nav: "scans", Crumbs: []crumb{{Label: "Scans"}}, Data: data})
+	h.render(w, r, "scans.html", page{Title: "Scans", Nav: "scans", Crumbs: []crumb{{Label: "Scans"}}, Data: data})
 }
 
 // --- New scan: the gallery of scan types ---
@@ -187,8 +266,11 @@ type galleryData struct {
 	Discovery, Vulnerabilities []kind
 }
 
-func (h *Handler) newPage(w http.ResponseWriter, _ *http.Request) {
-	h.render(w, "new.html", page{
+func (h *Handler) newPage(w http.ResponseWriter, r *http.Request) {
+	if !h.requireCanScan(w, r) {
+		return
+	}
+	h.render(w, r, "new.html", page{
 		Title: "New scan", Nav: "scans",
 		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: "New scan"}},
 		Data:   galleryData{Discovery: kinds[:1], Vulnerabilities: kinds[1:]},
@@ -209,6 +291,9 @@ type settingsData struct {
 }
 
 func (h *Handler) settingsPage(w http.ResponseWriter, r *http.Request) {
+	if !h.requireCanScan(w, r) {
+		return
+	}
 	id := r.PathValue("kind")
 	i := slices.IndexFunc(kinds, func(k kind) bool { return k.ID == id && !k.Soon })
 	if i < 0 {
@@ -230,7 +315,7 @@ func (h *Handler) settingsPage(w http.ResponseWriter, r *http.Request) {
 	if id == "quick" {
 		data.PortPreset, data.LightVersion = "top100", true
 	}
-	h.render(w, "settings.html", page{
+	h.render(w, r, "settings.html", page{
 		Title: "New " + strings.ToLower(kinds[i].Name), Nav: "scans",
 		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: "New scan", Href: "/scans/new"}, {Label: kinds[i].Name}},
 		Data:   data,
@@ -344,7 +429,7 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 				cmp.Compare(b.Counts.Total(), a.Counts.Total()), cmp.Compare(a.Address, b.Address))
 		})
 	}
-	h.render(w, "scan.html", page{
+	h.render(w, r, "scan.html", page{
 		Title: s.Name, Nav: "scans",
 		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: s.Name}},
 		Data:   data,
@@ -370,6 +455,9 @@ func scanDetails(s tools.Scan) []detail {
 		{"Ports", ports},
 		{"Host discovery", discovery},
 		{"Started", s.Started.Local().Format("Jan 2, 15:04:05")},
+	}
+	if s.StartedBy != "" {
+		out = append(out, detail{"Started by", s.StartedBy})
 	}
 	if !s.Finished.IsZero() {
 		out = append(out, detail{"Took", formatDuration(s.Elapsed().Seconds())})
@@ -461,7 +549,7 @@ func (h *Handler) hostPage(w http.ResponseWriter, r *http.Request) {
 			data.Errors = append(data.Errors, e)
 		}
 	}
-	h.render(w, "host.html", page{
+	h.render(w, r, "host.html", page{
 		Title: addr, Nav: "scans",
 		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: s.Name, Href: "/scans/" + s.ID}, {Label: addr}},
 		Data:   data,
@@ -509,7 +597,7 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 			data.Looks = strings.Join(looks, " · ")
 		}
 	}
-	h.render(w, "finding.html", page{
+	h.render(w, r, "finding.html", page{
 		Title: data.Title, Nav: "scans",
 		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: s.Name, Href: "/scans/" + s.ID + "?tab=vulns"}, {Label: data.Title}},
 		Data:   data,
@@ -518,8 +606,8 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 
 // --- Check library ---
 
-func (h *Handler) checksPage(w http.ResponseWriter, _ *http.Request) {
-	h.render(w, "checks.html", page{Title: "Check library", Nav: "checks", Crumbs: []crumb{{Label: "Check library"}}, Data: h.Service.ListChecks()})
+func (h *Handler) checksPage(w http.ResponseWriter, r *http.Request) {
+	h.render(w, r, "checks.html", page{Title: "Check library", Nav: "checks", Crumbs: []crumb{{Label: "Check library"}}, Data: h.Service.ListChecks()})
 }
 
 func (h *Handler) checksPartial(w http.ResponseWriter, r *http.Request) {

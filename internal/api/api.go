@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/nuqs-org/nuqs/internal/auth"
 	"github.com/nuqs-org/nuqs/internal/tools"
 )
 
@@ -22,6 +23,10 @@ type Handler struct {
 	Addr    string
 	// Scans runs scans in the background. Nil leaves out /api/scans.
 	Scans *tools.Scans
+	// Auth enforces authentication, RBAC and serves /api/users when non-nil.
+	Auth *auth.Service
+	// HTTPS reports whether the server is listening over TLS.
+	HTTPS bool
 }
 
 // New constructs an API handler for svc bound to addr.
@@ -34,13 +39,25 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/status", h.handleStatus)
 	mux.HandleFunc("/api/checks", h.handleChecks)
 	h.registerScans(mux)
+	h.registerUsers(mux)
 }
 
 // ServeHTTP dispatches API requests on a standalone handler.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	mux := http.NewServeMux()
 	h.Register(mux)
-	mux.ServeHTTP(w, r)
+	var handler http.Handler = mux
+	if h.Auth != nil {
+		handler = h.Auth.Gate(handler)
+	}
+	handler.ServeHTTP(w, r)
+}
+
+func (h *Handler) sameOrigin(r *http.Request) bool {
+	if h.HTTPS || r.TLS != nil {
+		return auth.SameOrigin(r, true)
+	}
+	return IsLocalOrigin(r, h.Addr)
 }
 
 func (h *Handler) handleStatus(w http.ResponseWriter, r *http.Request) {

@@ -38,6 +38,9 @@ type NewScan struct {
 	Description string      `json:"description"`
 	Kind        string      `json:"kind"` // quick, full or custom
 	Settings    ScanRequest `json:"settings"`
+	// StartedBy records the authenticated username that launched the scan.
+	// Ignored in JSON so API clients cannot spoof another user.
+	StartedBy string `json:"-"`
 }
 
 // Scan is one scan and everything we know about it so far. Values handed
@@ -47,6 +50,7 @@ type Scan struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description,omitempty"`
 	Kind        string         `json:"kind"`
+	StartedBy   string         `json:"started_by,omitempty"`
 	Settings    ScanRequest    `json:"settings"`
 	Targets     []string       `json:"targets"`
 	Status      ScanStatus     `json:"status"`
@@ -148,6 +152,7 @@ func (m *Scans) Start(in NewScan) (Scan, error) {
 			Name:        name,
 			Description: strings.TrimSpace(in.Description),
 			Kind:        in.Kind,
+			StartedBy:   strings.TrimSpace(in.StartedBy),
 			Settings:    in.Settings,
 			Targets:     valid.Targets,
 			Status:      ScanRunning,

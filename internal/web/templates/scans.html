@@ -1,6 +1,6 @@
 <!-- Scans: the home page, every scan with its status and what it found. -->
-{{define "actions"}}<a class="button primary" href="/scans/new">New scan</a>{{end}}
-{{define "content"}}{{with .Data}}
+{{define "actions"}}{{if .CanScan}}<a class="button primary" href="/scans/new">New scan</a>{{end}}{{end}}
+{{define "content"}}{{$canScan := .CanScan}}{{with .Data}}
 <section class="page" {{if .Running}}data-watch="{{.Running}}"{{end}}>
   <div class="pageHead"><h1>Scans</h1></div>
   {{if .Rows}}
@@ -13,7 +13,7 @@
         <td>{{.KindName}}</td>
         <td><span class="statusPill {{.Class}}"{{if eq .Status "running"}} id="statusLabel"{{end}}>{{.Label}}</span></td>
         <td>{{if eq .Status "running"}}<span class="none">—</span>{{else}}{{template "counts" .Counts}}{{end}}</td>
-        <td class="mono">{{clock .Started}}</td>
+        <td class="mono">{{clock .Started}}{{if .StartedBy}}<small>by {{.StartedBy}}</small>{{end}}</td>
       </tr>{{end}}
       </tbody>
     </table>
@@ -21,12 +21,16 @@
   {{else}}
   <div class="emptyState">
     <h2>No scans yet</h2>
+    {{if $canScan}}
     <p>Start with a scan of this computer to see how it works, it takes a few seconds.</p>
     <div class="emptyActions">
       <button type="button" class="primary" id="tryScan" data-target="{{.SuggestedTarget}}">Scan {{.SuggestedTarget}}</button>
       <a class="button" href="/scans/new">Choose a scan type</a>
     </div>
     <p class="formError" id="tryError" role="alert" hidden></p>
+    {{else}}
+    <p>You have read-only viewer access. Ask a scanner or admin to run a scan.</p>
+    {{end}}
   </div>
   {{end}}
 </section>
