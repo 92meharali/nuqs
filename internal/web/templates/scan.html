@@ -68,9 +68,9 @@
       {{else}}
       <form class="findingFilters" method="get" action="/scans/{{.ID}}" aria-label="Filter vulnerabilities">
         <input type="hidden" name="tab" value="vulns">
-        <label>Severity
+        <label class="filter{{if .Filters.Severity}} on{{end}}"><span>Severity</span>
           <select name="severity">
-            <option value="">All severities</option>
+            <option value="">All</option>
             <option value="critical"{{if eq .Filters.Severity "critical"}} selected{{end}}>Critical</option>
             <option value="high"{{if eq .Filters.Severity "high"}} selected{{end}}>High</option>
             <option value="medium"{{if eq .Filters.Severity "medium"}} selected{{end}}>Medium</option>
@@ -78,17 +78,17 @@
             <option value="info"{{if eq .Filters.Severity "info"}} selected{{end}}>Info</option>
           </select>
         </label>
-        <label>Confidence
+        <label class="filter{{if .Filters.Confidence}} on{{end}}"><span>Confidence</span>
           <select name="confidence">
-            <option value="">All confidence levels</option>
+            <option value="">All</option>
             <option value="confirmed"{{if eq .Filters.Confidence "confirmed"}} selected{{end}}>Confirmed</option>
             <option value="inferred"{{if eq .Filters.Confidence "inferred"}} selected{{end}}>Inferred</option>
           </select>
         </label>
-        <button type="submit">Apply filters</button>
-        {{if .Filters.Active}}<a href="/scans/{{.ID}}?tab=vulns">Clear filters</a>{{end}}
+        <noscript><button type="submit">Apply</button></noscript>
+        {{if .Filters.Active}}<a class="clearFilters" href="/scans/{{.ID}}?tab=vulns" title="Clear filters" aria-label="Clear filters"><svg aria-hidden="true" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m7 7 10 10M17 7 7 17"/></svg>Clear</a>
+        <span class="findingMatchCount">Showing {{len .Vulns}} of {{.TotalVulns}}</span>{{end}}
       </form>
-      {{if .Filters.Active}}<p class="findingMatchCount">Showing {{len .Vulns}} of {{.TotalVulns}} vulnerabilities</p>{{end}}
       <div class="tableCard">
         {{if .Vulns}}<table class="list">
           <thead><tr><th class="narrow">Severity</th><th class="wide">Name</th><th>Hosts</th></tr></thead>

@@ -10,7 +10,9 @@ package web
 import (
 	"bytes"
 	"cmp"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -45,9 +47,10 @@ type Handler struct {
 	Scans   *tools.Scans
 	Addr    string
 
-	pages  map[string]*template.Template
-	parts  *template.Template
-	static http.Handler
+	pages   map[string]*template.Template
+	parts   *template.Template
+	static  http.Handler
+	version string // changes whenever a static file changes, see assetVersion
 }
 
 // New parses the embedded templates and returns a ready web Handler.
@@ -81,7 +84,23 @@ func New(svc *tools.Service, scans *tools.Scans, addr string) (*Handler, error) 
 		return nil, fmt.Errorf("web: open static assets: %w", err)
 	}
 	h.static = http.StripPrefix("/static/", http.FileServer(http.FS(staticFS)))
+	h.version = assetVersion(staticFS)
 	return h, nil
+}
+
+// assetVersion is a short hash of every static file. Pages link to
+// /static/app.js?v=<hash>, so a browser never keeps an old copy after an update.
+func assetVersion(files fs.FS) string {
+	sum := sha256.New()
+	_ = fs.WalkDir(files, ".", func(path string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			data, _ := fs.ReadFile(files, path)
+			sum.Write([]byte(path))
+			sum.Write(data)
+		}
+		return nil
+	})
+	return hex.EncodeToString(sum.Sum(nil))[:10]
 }
 
 // Register attaches the pages, htmx partials and static assets to mux.
@@ -118,15 +137,17 @@ type crumb struct {
 
 // page is what layout.html needs, plus the page's own data in Data.
 type page struct {
-	Title  string
-	Nav    string // which sidebar item is selected: "scans" or "checks"
-	Crumbs []crumb
-	Status tools.Status
-	Data   any
+	Version string // the static files version, for cache busting
+	Title   string
+	Nav     string // which sidebar item is selected: "scans" or "checks"
+	Crumbs  []crumb
+	Status  tools.Status
+	Data    any
 }
 
 func (h *Handler) render(w http.ResponseWriter, name string, p page) {
 	p.Status = h.Service.Status(h.Addr)
+	p.Version = h.version
 	var buf bytes.Buffer
 	if err := h.pages[name].ExecuteTemplate(&buf, "layout", p); err != nil {
 		http.Error(w, "template error", http.StatusInternalServerError)

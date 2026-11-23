@@ -253,9 +253,9 @@ func TestFindingFilters(t *testing.T) {
 	scan := startAndWait(t, h, "Filtered scan")
 	url := "/scans/" + scan.ID + "?tab=vulns"
 	_, body := get(t, h, url+"&severity=medium&confidence=confirmed")
-	mustContain(t, "matching filters", body, "Showing 1 of 1 vulnerabilities", `value="medium" selected`, `value="confirmed" selected`, "Unencrypted Telnet", "Clear filters")
+	mustContain(t, "matching filters", body, "Showing 1 of 1<", `value="medium" selected`, `value="confirmed" selected`, "Unencrypted Telnet", "Clear filters")
 	_, body = get(t, h, url+"&severity=medium&confidence=inferred")
-	mustContain(t, "no matches", body, "Showing 0 of 1 vulnerabilities", "No findings match these filters.")
+	mustContain(t, "no matches", body, "Showing 0 of 1<", "No findings match these filters.")
 	if strings.Contains(body, `/vulns/telnet-open`) {
 		t.Error("nonmatching finding is linked")
 	}
@@ -274,6 +274,29 @@ func TestFindingFilters(t *testing.T) {
 	_, body = get(t, h, detail+"?confidence=inferred")
 	mustContain(t, "filtered detail", body, "No findings match these filters.")
 
+}
+
+func TestFilterControls(t *testing.T) {
+	h := newTestWeb(t, &fakeRunner{xml: scanXML})
+	scan := startAndWait(t, h, "Filter controls")
+	_, body := get(t, h, "/scans/"+scan.ID+"?tab=vulns&severity=medium")
+	// Filters apply on change, the button is only there without JavaScript.
+	mustContain(t, "controls", body, `<noscript><button type="submit">Apply</button></noscript>`, `class="filter on"><span>Severity</span>`, `class="clearFilters"`)
+	if strings.Contains(body, "Apply filters") {
+		t.Error("the Apply button should only show without JavaScript")
+	}
+}
+
+func TestStaticFilesVersioned(t *testing.T) {
+	h := newTestWeb(t, &fakeRunner{xml: scanXML})
+	_, body := get(t, h, "/scans")
+	if len(h.version) != 10 {
+		t.Fatalf("version %q", h.version)
+	}
+	mustContain(t, "versioned assets", body, "/static/app.js?v="+h.version, "/static/nuqs.css?v="+h.version)
+	if code, _ := get(t, h, "/static/app.js?v="+h.version); code != http.StatusOK {
+		t.Errorf("versioned file: %d", code)
+	}
 }
 
 func TestGroupedFindingHostCount(t *testing.T) {

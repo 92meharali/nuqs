@@ -213,7 +213,13 @@ dialog::backdrop {background:#00000066}
 .fixDetails summary {cursor:pointer}
 .fixDetails div {margin-top:12px;overflow-wrap:anywhere}
 .fixDetails p {margin:4px 0 8px}
-.findingFilters {display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:12px 0}
-.findingFilters label {display:grid;gap:4px;font-size:13px}
-.findingFilters a {align-self:center}
-.findingMatchCount {margin:0 0 8px;color:var(--sub);font-size:13px}
+.findingFilters {display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 12px}
+.findingFilters .filter {display:inline-flex;align-items:center;gap:2px;height:30px;padding:0 2px 0 11px;border-radius:7px;border:.5px solid var(--line);background:var(--panel);box-shadow:0 .5px 1px #0000001f;font-size:13px;color:var(--sub);cursor:pointer}
+.findingFilters .filter:hover {background:var(--hover)}
+.findingFilters .filter.on {border-color:var(--accent)}
+.findingFilters .filter select {width:auto;height:28px;padding:0 22px 0 4px;border:0;-webkit-appearance:none;appearance:none;background:transparent url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10' fill='none' stroke='%238a8a8e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m2.5 4 2.5 2.5L7.5 4'/%3E%3C/svg%3E") no-repeat right 8px center;box-shadow:none;color:var(--text);font-weight:500;cursor:pointer;field-sizing:content}
+.findingFilters .filter:focus-within {border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.findingFilters .filter select:focus {box-shadow:none}
+.clearFilters {display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px;border-radius:13px;color:var(--sub);font-size:12px;font-weight:500;text-decoration:none}
+.clearFilters:hover {background:var(--hover);color:var(--text)}
+.findingMatchCount {margin-left:auto;color:var(--sub);font-size:13px}

@@ -6,9 +6,9 @@
 <meta name="htmx-config" content='{"allowEval":false,"allowScriptTags":false,"includeIndicatorStyles":false}'>
 <link rel="icon" href="/static/nuqs-logo.png" type="image/png">
 <title>{{.Title}} · Nuqs</title>
-<link rel="stylesheet" href="/static/nuqs.css">
+<link rel="stylesheet" href="/static/nuqs.css?v={{.Version}}">
 <script defer src="/static/htmx.min.js"></script>
-<script defer src="/static/app.js"></script>
+<script defer src="/static/app.js?v={{.Version}}"></script>
 </head>
 <body>
 <aside class="rail">
