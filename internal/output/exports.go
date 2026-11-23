@@ -1,4 +1,4 @@
-// Additional report exports for browsers, PDF readers and spreadsheets.
+// Package output includes report exports for browsers, PDF readers and spreadsheets.
 package output
 
 import (
