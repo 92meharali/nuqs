@@ -32,6 +32,11 @@ Two steps, the usual scanner flow:
    - **Launch** and **Cancel** in the toolbar. Changing a setting keeps the type and adds a **modified** tag
 - If the target isn't in the allowed list, it says so before the scan starts, not after
 
+### Scan keyboard shortcuts
+
+- Press **Enter** in a single-line scan settings field to launch the scan.
+- Press **Escape** on a running scan page to stop it. Open dialogs and text fields keep their own keyboard behavior.
+
 ### Scan results (W2)
 
 The main screen. Three tabs:
