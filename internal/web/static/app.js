@@ -362,3 +362,9 @@ if (stop) {
     }
   };
 }
+
+const findingFilters = document.querySelector(".findingFilters");
+if (findingFilters && typeof findingFilters.requestSubmit === "function") {
+  findingFilters.querySelector('button[type="submit"]').hidden = true;
+  findingFilters.addEventListener("change", () => findingFilters.requestSubmit());
+}
