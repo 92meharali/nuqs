@@ -205,10 +205,14 @@ dialog::backdrop {background:#00000066}
   :root {--sidebar:60px}
   .navLabel,.brandLink,.connection {display:none}
   .rail nav a {justify-content:center;padding:0}
-  .list th:nth-child(n+4),.list td:nth-child(n+4) {display:none}
+  .fixList :is(th,td) {padding-inline:6px}
+  .list:not(.fixList) th:nth-child(n+4),.list:not(.fixList) td:nth-child(n+4) {display:none}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after {animation:none!important;transition:none!important}}
 
+.fixDetails summary {cursor:pointer}
+.fixDetails div {margin-top:12px;overflow-wrap:anywhere}
+.fixDetails p {margin:4px 0 8px}
 .findingFilters {display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:12px 0}
 .findingFilters label {display:grid;gap:4px;font-size:13px}
 .findingFilters a {align-self:center}

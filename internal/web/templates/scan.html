@@ -27,6 +27,7 @@
       <nav class="segmented" aria-label="Results">
         <a href="/scans/{{.ID}}"{{if eq .Tab "hosts"}} aria-current="page"{{end}}>Hosts <span class="count">{{len .Hosts}}</span></a>
         <a href="/scans/{{.ID}}?tab=vulns"{{if eq .Tab "vulns"}} aria-current="page"{{end}}>Vulnerabilities <span class="count">{{.TotalVulns}}</span></a>
+        <a href="/scans/{{.ID}}?tab=fixes"{{if eq .Tab "fixes"}} aria-current="page"{{end}}>By Fix <span class="count">{{len .Fixes}}</span></a>
       </nav>
       {{if eq .Tab "hosts"}}
       <div class="tableCard">
@@ -38,6 +39,31 @@
             <td>{{template "sevbar" .Counts}}</td>
           </tr>{{end}}</tbody>
         </table>{{else}}<p class="emptyRow">No hosts answered. If they block ping, turn on "Scan hosts even if they don't answer ping" under Discovery.</p>{{end}}
+      </div>
+      {{else if eq .Tab "fixes"}}
+      <div class="tableCard">
+        {{if .Fixes}}<table class="list fixList">
+          <thead><tr><th>Highest severity</th><th class="wide">Fix</th><th>Findings</th><th>Hosts</th></tr></thead>
+          <tbody>{{$id := .ID}}{{range .Fixes}}<tr>
+            <td><span class="badge {{badgeClass .Severity}}">{{.Severity}}</span></td>
+            <td>
+              <details class="fixDetails">
+                <summary><strong>{{.Title}}</strong></summary>
+                {{$sharedFix := .SharedFix}}{{if $sharedFix}}<div>
+                  <p>{{$sharedFix}}</p><button type="button" class="copy" data-fix="{{$sharedFix}}">Copy fix</button>
+                  <p><strong>Check-specific guidance</strong></p>
+                </div>{{end}}
+                {{range .Instructions}}<div>
+                  <a href="/scans/{{$id}}/vulns/{{.CheckID}}?from=fixes">{{.Title}}</a>
+                  {{if .Text}}<p>{{.Text}}</p><button type="button" class="copy" data-fix="{{.Text}}"{{if $sharedFix}} data-copy-label="Copy check guidance"{{end}}>{{if $sharedFix}}Copy check guidance{{else}}Copy fix{{end}}</button>
+                  {{else}}<p>No fix guidance available.</p>{{end}}
+                </div>{{end}}
+              </details>
+            </td>
+            <td>{{.Findings}}</td>
+            <td>{{.Hosts}}</td>
+          </tr>{{end}}</tbody>
+        </table>{{else}}<p class="emptyRow">No findings to group by fix.</p>{{end}}
       </div>
       {{else}}
       <form class="findingFilters" method="get" action="/scans/{{.ID}}" aria-label="Filter vulnerabilities">

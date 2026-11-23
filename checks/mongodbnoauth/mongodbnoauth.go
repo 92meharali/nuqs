@@ -39,12 +39,13 @@ type Check struct{}
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "mongodb-no-auth",
-		Title:    "MongoDB server has no password",
-		Severity: model.High,
-		Fix:      "Turn on access control (security.authorization: enabled in mongod.conf) and create users, or bind MongoDB to localhost only.",
-		Ports:    []int{27017, 27018},
-		Services: []string{"mongodb", "mongod"},
+		ID:               "mongodb-no-auth",
+		Title:            "MongoDB server has no password",
+		Severity:         model.High,
+		Fix:              "Turn on access control (security.authorization: enabled in mongod.conf) and create users, or bind MongoDB to localhost only.",
+		RemediationTitle: "Enable MongoDB access control",
+		Ports:            []int{27017, 27018},
+		Services:         []string{"mongodb", "mongod"},
 	}
 }
 

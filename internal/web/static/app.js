@@ -85,7 +85,7 @@ document.addEventListener("click", async event => {
   if (!button) return;
   try { await navigator.clipboard.writeText(button.dataset.fix || ""); button.textContent = "Copied"; }
   catch { button.textContent = "Couldn't copy"; }
-  setTimeout(() => { button.textContent = "Copy fix"; }, 2000);
+  setTimeout(() => { button.textContent = button.dataset.copyLabel || "Copy fix"; }, 2000);
 });
 
 // startScan asks the server to start a scan and opens its page.

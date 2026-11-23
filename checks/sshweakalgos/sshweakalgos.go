@@ -25,12 +25,13 @@ type Check struct{}
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "ssh-weak-algorithms",
-		Title:    "SSH server allows weak algorithms",
-		Severity: model.Low,
-		Fix:      "Remove the weak algorithms from KexAlgorithms, HostKeyAlgorithms, Ciphers and MACs in sshd_config, or update OpenSSH. Its defaults are fine.",
-		Ports:    []int{22},
-		Services: []string{"ssh"},
+		ID:               "ssh-weak-algorithms",
+		Title:            "SSH server allows weak algorithms",
+		Severity:         model.Low,
+		Fix:              "Remove the weak algorithms from KexAlgorithms, HostKeyAlgorithms, Ciphers and MACs in sshd_config, or update OpenSSH. Its defaults are fine.",
+		RemediationTitle: "Remove weak SSH algorithms",
+		Ports:            []int{22},
+		Services:         []string{"ssh"},
 	}
 }
 

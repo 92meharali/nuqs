@@ -27,12 +27,13 @@ type Check struct{}
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "ftp-anonymous-login",
-		Title:    "FTP server allows anonymous login",
-		Severity: model.Medium,
-		Fix:      "Disable anonymous FTP unless you really mean to share files publicly. For vsftpd set anonymous_enable=NO.",
-		Ports:    []int{21},
-		Services: []string{"ftp"},
+		ID:               "ftp-anonymous-login",
+		Title:            "FTP server allows anonymous login",
+		Severity:         model.Medium,
+		Fix:              "Disable anonymous FTP unless you really mean to share files publicly. For vsftpd set anonymous_enable=NO.",
+		RemediationTitle: "Disable anonymous FTP",
+		Ports:            []int{21},
+		Services:         []string{"ftp"},
 	}
 }
 

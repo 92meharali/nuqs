@@ -29,12 +29,13 @@ type Check struct{}
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "redis-no-auth",
-		Title:    "Redis server has no password",
-		Severity: model.High,
-		Fix:      "Set requirepass in redis.conf, or bind Redis to localhost only.",
-		Ports:    []int{6379},
-		Services: []string{"redis"},
+		ID:               "redis-no-auth",
+		Title:            "Redis server has no password",
+		Severity:         model.High,
+		Fix:              "Set requirepass in redis.conf, or bind Redis to localhost only.",
+		RemediationTitle: "Require Redis authentication",
+		Ports:            []int{6379},
+		Services:         []string{"redis"},
 	}
 }
 

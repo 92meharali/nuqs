@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nuqs-org/nuqs/internal/check"
 	"github.com/nuqs-org/nuqs/internal/engine"
 	"github.com/nuqs-org/nuqs/internal/model"
 	"github.com/nuqs-org/nuqs/internal/tools"
@@ -352,17 +353,86 @@ func groupFindings(findings []model.Finding, filters findingFilters) []vulnRow {
 	return rows
 }
 
+type fixInstruction struct {
+	CheckID, Title, Text string
+}
+
+type fixRow struct {
+	SharedFix    string
+	Title        string
+	Severity     string
+	Findings     int
+	Hosts        int
+	Instructions []fixInstruction
+}
+
+func groupByFix(findings []model.Finding, checks []check.Check) []fixRow {
+	metadata := make(map[string]check.Info, len(checks))
+	for _, c := range checks {
+		info := c.Info()
+		metadata[info.ID] = info
+	}
+
+	type fixKey struct{ remediation, check string }
+	type group struct {
+		row          fixRow
+		highest      model.Severity
+		hosts        map[string]bool
+		instructions map[fixInstruction]bool
+	}
+	groups := map[fixKey]*group{}
+	for _, finding := range findings {
+		info := metadata[finding.CheckID]
+		key := fixKey{remediation: info.RemediationID}
+		if key.remediation == "" {
+			key.check = finding.CheckID
+		}
+		g := groups[key]
+		if g == nil {
+			title := info.RemediationTitle
+			if title == "" {
+				title = finding.Title
+			}
+			g = &group{row: fixRow{Title: title, SharedFix: info.RemediationFix}, highest: finding.Severity, hosts: map[string]bool{}, instructions: map[fixInstruction]bool{}}
+			groups[key] = g
+		}
+		g.highest = max(g.highest, finding.Severity)
+		g.row.Findings++
+		g.hosts[finding.Host] = true
+		instruction := fixInstruction{CheckID: finding.CheckID, Title: finding.Title, Text: finding.Fix}
+		if !g.instructions[instruction] {
+			g.instructions[instruction] = true
+			g.row.Instructions = append(g.row.Instructions, instruction)
+		}
+	}
+	rows := make([]fixRow, 0, len(groups))
+	for _, g := range groups {
+		g.row.Severity = g.highest.String()
+		g.row.Hosts = len(g.hosts)
+		slices.SortFunc(g.row.Instructions, func(a, b fixInstruction) int {
+			return cmp.Or(cmp.Compare(a.Title, b.Title), cmp.Compare(a.CheckID, b.CheckID), cmp.Compare(a.Text, b.Text))
+		})
+		rows = append(rows, g.row)
+	}
+	slices.SortFunc(rows, func(a, b fixRow) int {
+		return cmp.Or(cmp.Compare(severityRank(a.Severity), severityRank(b.Severity)),
+			cmp.Compare(a.Title, b.Title), cmp.Compare(a.Instructions[0].CheckID, b.Instructions[0].CheckID))
+	})
+	return rows
+}
+
 type detail struct{ Label, Value string }
 
 type scanData struct {
 	tools.Scan
-	Tab        string // "hosts" or "vulns"
+	Tab        string // "hosts", "vulns" or "fixes"
 	Label      string
 	Class      string
 	Counts     sevCounts
 	Donut      template.CSS
 	Hosts      []hostRow
 	Vulns      []vulnRow
+	Fixes      []fixRow
 	Filters    findingFilters
 	TotalVulns int
 	Errors     []engine.CheckError
@@ -380,11 +450,14 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 	if query.Get("tab") == "vulns" {
 		data.Tab = "vulns"
 		data.Filters = readFindingFilters(query)
+	} else if query.Get("tab") == "fixes" {
+		data.Tab = "fixes"
 	}
 	data.Donut = donut(data.Counts)
 	data.Details = scanDetails(s)
 	if rep := s.Report; rep != nil {
 		data.Errors = rep.Errors
+		data.Fixes = groupByFix(rep.Findings, h.Service.Checks())
 		for _, host := range rep.Hosts {
 			row := hostRow{Address: host.Address, Hostnames: host.Hostnames, Open: len(host.Services)}
 			for _, f := range rep.Findings {
@@ -573,6 +646,9 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 	back := "/scans/" + s.ID + "?tab=vulns"
 	if filters.Active() {
 		back += "&" + strings.TrimPrefix(filters.DetailQuery(), "?")
+	}
+	if r.URL.Query().Get("from") == "fixes" {
+		back = "/scans/" + s.ID + "?tab=fixes"
 	}
 	for _, c := range h.Service.ListChecks() {
 		if c.ID == id {

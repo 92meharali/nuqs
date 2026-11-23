@@ -35,12 +35,15 @@ type Check struct {
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "ssh-password-auth",
-		Title:    "SSH server allows password login",
-		Severity: model.Medium,
-		Fix:      "Use SSH keys and set PasswordAuthentication no in sshd_config. Passwords can be guessed, keys can't.",
-		Ports:    []int{22},
-		Services: []string{"ssh"},
+		ID:               "ssh-password-auth",
+		Title:            "SSH server allows password login",
+		Severity:         model.Medium,
+		Fix:              "Use SSH keys and set PasswordAuthentication no in sshd_config. Passwords can be guessed, keys can't.",
+		RemediationID:    "ssh-public-key-only",
+		RemediationTitle: "Require SSH public-key authentication",
+		RemediationFix:   check.SSHKeyOnlyFix,
+		Ports:            []int{22},
+		Services:         []string{"ssh"},
 	}
 }
 
