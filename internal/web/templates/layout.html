@@ -62,6 +62,8 @@
   </div>
   <form method="POST" action="/account/password" id="passwordForm">
     <h3>Change password</h3>
+    {{if .AccountError}}<p id="accountError" class="formError" role="alert">{{.AccountError}}</p>{{end}}
+    <input type="hidden" name="return_to" value="{{.ReturnTo}}">
     <input type="text" name="username" value="{{.User.Username}}" autocomplete="username" hidden>
     <label class="field">Current password
       <input name="current_password" type="password" required autocomplete="current-password">

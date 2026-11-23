@@ -106,7 +106,16 @@ func TestUsersRolesAndLastAdminGuard(t *testing.T) {
 	if _, err := st.UpdateUserRole(bob.ID, RoleAdmin, now); err != nil {
 		t.Fatal(err)
 	}
-	// Now admin can be demoted because bob is also admin.
+	if _, err := st.UpdateUserRole(admin.ID, RoleViewer, now); !errors.Is(err, ErrLastAdmin) {
+		t.Fatalf("pending admin should not permit demotion: %v", err)
+	}
+	if err := st.DeleteUser(admin.ID); !errors.Is(err, ErrLastAdmin) {
+		t.Fatalf("pending admin should not permit removal: %v", err)
+	}
+	if _, err := st.ConsumeResetCode("bob", "invite-hash", "activated-hash", now); err != nil {
+		t.Fatal(err)
+	}
+	// Now bob can sign in, so the original admin may be demoted.
 	if u, err := st.UpdateUserRole(admin.ID, RoleViewer, now); err != nil || u.Role != RoleViewer {
 		t.Fatalf("demote with second admin: %+v %v", u, err)
 	}

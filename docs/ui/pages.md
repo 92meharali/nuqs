@@ -17,7 +17,7 @@ Wireframes for each page are made in W1 and saved in `docs/ui/wireframes/`.
 ### Users (Admin only)
 
 - Add teammates with a role (`admin`, `scanner` or `viewer`) and receive a one-time code so they choose their own password
-- Change roles, issue password reset codes (revoking existing sessions) and remove accounts (with last-admin and self-delete protection)
+- Change roles, issue password reset codes (revoking existing sessions) and remove accounts (with self-delete protection and a requirement that at least one admin who can sign in remains)
 
 ### Scans (W2)
 

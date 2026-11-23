@@ -157,16 +157,18 @@ type crumb struct {
 
 // page is what layout.html needs, plus the page's own data in Data.
 type page struct {
-	Title       string
-	Nav         string // which sidebar item is selected: "scans", "checks" or "users"
-	Crumbs      []crumb
-	Status      tools.Status
-	User        *auth.Principal
-	IsAdmin     bool
-	CanScan     bool
-	FlashNotice string
-	FlashError  string
-	Data        any
+	Title        string
+	Nav          string // which sidebar item is selected: "scans", "checks" or "users"
+	Crumbs       []crumb
+	Status       tools.Status
+	User         *auth.Principal
+	IsAdmin      bool
+	CanScan      bool
+	FlashNotice  string
+	FlashError   string
+	AccountError string
+	ReturnTo     string
+	Data         any
 }
 
 func (h *Handler) render(w http.ResponseWriter, r *http.Request, name string, p page) {
@@ -175,6 +177,22 @@ func (h *Handler) render(w http.ResponseWriter, r *http.Request, name string, p 
 
 func (h *Handler) renderStatus(w http.ResponseWriter, r *http.Request, status int, name string, p page) {
 	p.Status = h.Service.Status(h.Addr)
+	query := r.URL.Query()
+	switch query.Get("account_error") {
+	case "mismatch":
+		p.AccountError = "New passwords do not match."
+	case "current-password":
+		p.AccountError = "Current password is incorrect."
+	case "invalid-password":
+		p.AccountError = "Enter a valid new password."
+	case "update":
+		p.AccountError = "Could not update password."
+	}
+	query.Del("account_error")
+	query.Del("notice")
+	returnTo := *r.URL
+	returnTo.RawQuery = query.Encode()
+	p.ReturnTo = returnTo.RequestURI()
 	if h.Auth != nil {
 		if principal, ok := auth.PrincipalFromContext(r.Context()); ok {
 			copyP := principal

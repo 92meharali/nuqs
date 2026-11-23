@@ -44,12 +44,13 @@ const (
 
 // Sentinel errors returned by AuthStore implementations.
 var (
-	ErrNotFound    = errors.New("not found")
-	ErrExists      = errors.New("already exists")
-	ErrLastAdmin   = errors.New("cannot remove or demote the last admin")
-	ErrInvalidCode = errors.New("invalid one-time code")
-	ErrCodeExpired = errors.New("one-time code has expired")
-	ErrSetupClosed = errors.New("initial setup is already complete")
+	ErrPasswordChanged = errors.New("password has changed")
+	ErrNotFound        = errors.New("not found")
+	ErrExists          = errors.New("already exists")
+	ErrLastAdmin       = errors.New("cannot remove or demote the last admin")
+	ErrInvalidCode     = errors.New("invalid one-time code")
+	ErrCodeExpired     = errors.New("one-time code has expired")
+	ErrSetupClosed     = errors.New("initial setup is already complete")
 )
 
 // User is a persisted Nuqs account.
@@ -83,12 +84,14 @@ type OneTimeCode struct {
 type AuthStore interface {
 	CountUsers() (int, error)
 	ListUsers() ([]User, error)
+	ListUsersWithResetStatus(now time.Time) ([]User, map[string]bool, error)
 	GetUserByID(id string) (User, error)
 	GetUserByUsername(username string) (User, error)
 	CreateUser(user User) (User, error)
 	CreateUserWithResetCode(user User, codeHash string, now, expiresAt time.Time) (User, error)
 	UpdateUserRole(id string, role Role, now time.Time) (User, error)
 	UpdatePassword(id, passwordHash string, now time.Time) error
+	RotatePassword(expectedHash, newHash string, session Session) error
 	DeleteUser(id string) error
 
 	ReplaceSetupCode(codeHash string, now time.Time) error

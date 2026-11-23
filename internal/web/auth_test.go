@@ -259,6 +259,17 @@ func TestWebAuthErrorBranches(t *testing.T) {
 	if w.Code != http.StatusUnauthorized || !strings.Contains(w.Body.String(), "Current password is incorrect") {
 		t.Errorf("change pw wrong current = %d", w.Code)
 	}
+	w = postForm(h, "/account/password", url.Values{
+		"current_password": {"incorrect-password"}, "new_password": {"new-password-1"}, "confirm_password": {"new-password-1"},
+		"return_to": {"/checks?q=telnet"},
+	}, adminCookies)
+	if w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/checks?account_error=current-password&q=telnet" {
+		t.Fatalf("password error should return to the original page, got %d %q", w.Code, w.Header().Get("Location"))
+	}
+	w = getWithCookies(h, w.Header().Get("Location"), adminCookies)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `id="accountError"`) || !strings.Contains(w.Body.String(), "Current password is incorrect") {
+		t.Fatalf("missing inline account error: %d", w.Code)
+	}
 
 	// Users page errors: duplicate user, self delete, last-admin demote, missing user.
 	w = postForm(h, "/users", url.Values{"username": {"alice"}, "role": {"viewer"}}, adminCookies)

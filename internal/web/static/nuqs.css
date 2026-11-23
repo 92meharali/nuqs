@@ -273,3 +273,8 @@ dialog::backdrop {background:#00000066}
 .findingFilters label {display:grid;gap:4px;font-size:13px}
 .findingFilters a {align-self:center}
 .findingMatchCount {margin:0 0 8px;color:var(--sub);font-size:13px}
+
+.userMobileLabel {display:none}
+@media(max-width:740px){
+  .userMobileLabel {display:block;margin-bottom:4px;color:var(--sub);font-size:12px}
+}

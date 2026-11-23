@@ -59,9 +59,19 @@ const accountDialog = byId("accountDialog");
 if (accountButton && accountDialog) {
   accountButton.onclick = () => {
     const pwForm = byId("passwordForm");
-    if (pwForm) pwForm.reset();
+    if (pwForm) {
+      pwForm.reset();
+      pwForm.elements.confirm_password.setCustomValidity("");
+    }
     accountDialog.showModal();
   };
+  if (byId("accountError")) {
+    accountDialog.showModal();
+    const errorCode = new URLSearchParams(location.search).get("account_error");
+    const field = errorCode === "mismatch" ? "confirm_password" :
+      errorCode === "invalid-password" ? "new_password" : "current_password";
+    byId("passwordForm").elements[field].focus();
+  }
   const cancelAccount = byId("cancelAccount");
   if (cancelAccount) cancelAccount.onclick = () => accountDialog.close();
   accountDialog.onclick = event => {

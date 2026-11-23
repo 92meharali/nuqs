@@ -9,7 +9,7 @@
   {{if .Issued}}
   <div class="card codeBanner" role="status">
     <h2>One-time password code for <span class="mono">{{.Issued.Username}}</span></h2>
-    <p class="small subtle">Shown once and valid for 1 hour. Share this code with <strong>{{.Issued.Username}}</strong> so they can set their password at <code>/reset-password?user={{.Issued.Username}}</code>.</p>
+    <p class="small subtle">Shown once. Expires at {{clock .Issued.ExpiresAt}} server time. Share this code with <strong>{{.Issued.Username}}</strong> so they can set their password at <code>/reset-password?user={{.Issued.Username}}</code>.</p>
     <div class="codeRow">
       <code class="codeValue">{{.Issued.Code}}</code>
       <button type="button" class="copyCode" data-copy="{{.Issued.Code}}">Copy code</button>
@@ -48,22 +48,25 @@
           {{if .PendingPassword}}<small><span class="badge medium">pending password</span></small>{{else if .HasResetCode}}<small>Reset code active</small>{{end}}
         </td>
         <td>
+          <span class="userMobileLabel">Role</span>
           <form method="POST" action="/users/{{.ID}}/role" class="inlineForm">
             <select name="role" aria-label="Role for {{.Username}}"{{if .IsLastAdmin}} disabled{{end}}>
               <option value="admin"{{if eq .Role "admin"}} selected{{end}}>admin</option>
               <option value="scanner"{{if eq .Role "scanner"}} selected{{end}}>scanner</option>
               <option value="viewer"{{if eq .Role "viewer"}} selected{{end}}>viewer</option>
             </select>
-            <button type="submit"{{if .IsLastAdmin}} disabled{{end}}>Save</button>
+            <button type="submit" aria-label="Save role for {{.Username}}"{{if .IsLastAdmin}} disabled{{end}}>Save</button>
           </form>
+          {{if .IsLastAdmin}}<small>At least one admin who can sign in must remain.</small>{{end}}
         </td>
         <td>
+          <span class="userMobileLabel">Actions</span>
           <div class="userActions">
             <form method="POST" action="/users/{{.ID}}/reset" class="inlineForm" data-confirm="Generate a new one-time password reset code for {{.Username}}? Their active sessions will be signed out.">
-              <button type="submit">Reset password</button>
+              <button type="submit" aria-label="Reset password for {{.Username}}">Reset password</button>
             </form>
             <form method="POST" action="/users/{{.ID}}/delete" class="inlineForm" data-confirm="Remove account {{.Username}}? Their active sessions will end immediately.">
-              <button type="submit" class="dangerButton"{{if or .IsSelf .IsLastAdmin}} disabled{{end}}>Remove</button>
+              <button type="submit" class="dangerButton" aria-label="Remove account {{.Username}}"{{if or .IsSelf .IsLastAdmin}} disabled{{end}}>Remove</button>
             </form>
           </div>
         </td>

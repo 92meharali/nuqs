@@ -267,23 +267,18 @@ func (s *Service) ResolveSession(rawToken string) (Principal, bool, error) {
 
 // ListUsers returns safe user views for the admin users page and API.
 func (s *Service) ListUsers() ([]UserView, error) {
-	users, err := s.Store.ListUsers()
+	users, activeResets, err := s.Store.ListUsersWithResetStatus(s.now())
 	if err != nil {
 		return nil, err
 	}
-	now := s.now()
 	out := make([]UserView, 0, len(users))
 	for _, u := range users {
-		hasReset, err := s.Store.HasActiveResetCode(u.ID, now)
-		if err != nil {
-			return nil, err
-		}
 		out = append(out, UserView{
 			ID:              u.ID,
 			Username:        u.Username,
 			Role:            u.Role,
 			PendingPassword: u.PasswordHash == "",
-			HasResetCode:    hasReset,
+			HasResetCode:    activeResets[u.ID],
 			CreatedAt:       u.CreatedAt,
 			UpdatedAt:       u.UpdatedAt,
 		})
@@ -452,13 +447,17 @@ func (s *Service) ChangePassword(userID, currentPassword, newPassword string) (s
 	if err != nil {
 		return "", err
 	}
-	if err := s.Store.UpdatePassword(u.ID, hash, s.now()); err != nil {
+	token, session, err := s.sessionFor(u.ID)
+	if err != nil {
 		return "", err
 	}
-	if err := s.Store.DeleteUserSessions(u.ID); err != nil {
+	if err := s.Store.RotatePassword(u.PasswordHash, hash, session); err != nil {
+		if errors.Is(err, store.ErrPasswordChanged) {
+			return "", ErrInvalidCredentials
+		}
 		return "", err
 	}
-	return s.newSession(u.ID)
+	return token, nil
 }
 
 // ValidateUsername checks and canonicalizes an account username.
@@ -493,21 +492,23 @@ func ValidatePassword(password string) error {
 }
 
 func (s *Service) newSession(userID string) (string, error) {
-	raw, err := GenerateSessionToken()
+	raw, session, err := s.sessionFor(userID)
 	if err != nil {
 		return "", err
 	}
-	now := s.now()
-	err = s.Store.CreateSession(store.Session{
-		TokenHash: HashSecret(raw),
-		UserID:    userID,
-		CreatedAt: now,
-		ExpiresAt: now.Add(s.SessionTTL),
-	})
-	if err != nil {
+	if err := s.Store.CreateSession(session); err != nil {
 		return "", err
 	}
 	return raw, nil
+}
+
+func (s *Service) sessionFor(userID string) (string, store.Session, error) {
+	raw, err := GenerateSessionToken()
+	if err != nil {
+		return "", store.Session{}, err
+	}
+	now := s.now()
+	return raw, store.Session{TokenHash: HashSecret(raw), UserID: userID, CreatedAt: now, ExpiresAt: now.Add(s.SessionTTL)}, nil
 }
 
 func (s *Service) now() time.Time {

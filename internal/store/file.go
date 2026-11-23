@@ -75,13 +75,27 @@ func (f *FileStore) CountUsers() (int, error) {
 
 // ListUsers returns all accounts sorted by creation time, then username.
 func (f *FileStore) ListUsers() ([]User, error) {
+	users, _, err := f.ListUsersWithResetStatus(time.Time{})
+	return users, err
+}
+
+// ListUsersWithResetStatus reads accounts and their active reset flags in one snapshot.
+func (f *FileStore) ListUsersWithResetStatus(now time.Time) ([]User, map[string]bool, error) {
 	var out []User
+	active := map[string]bool{}
 	err := f.withState(false, func(st *fileState) error {
 		out = slices.Clone(st.Users)
+		if !now.IsZero() {
+			for _, c := range st.Codes {
+				if c.Purpose == CodeReset && (c.ExpiresAt.IsZero() || !c.ExpiresAt.Before(now)) {
+					active[c.UserID] = true
+				}
+			}
+		}
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	slices.SortFunc(out, func(a, b User) int {
 		if a.CreatedAt.Before(b.CreatedAt) {
@@ -92,7 +106,7 @@ func (f *FileStore) ListUsers() ([]User, error) {
 		}
 		return strings.Compare(a.Username, b.Username)
 	})
-	return out, nil
+	return out, active, nil
 }
 
 // GetUserByID returns the user with the given ID or ErrNotFound.
@@ -168,7 +182,7 @@ func (f *FileStore) UpdateUserRole(id string, role Role, now time.Time) (User, e
 		if i < 0 {
 			return ErrNotFound
 		}
-		if st.Users[i].Role == RoleAdmin && role != RoleAdmin && countAdmins(st.Users) <= 1 {
+		if st.Users[i].Role == RoleAdmin && st.Users[i].PasswordHash != "" && role != RoleAdmin && countAdmins(st.Users) <= 1 {
 			return ErrLastAdmin
 		}
 		st.Users[i].Role = role
@@ -192,6 +206,26 @@ func (f *FileStore) UpdatePassword(id, passwordHash string, now time.Time) error
 	})
 }
 
+// RotatePassword commits a password change and session rotation in one write.
+func (f *FileStore) RotatePassword(expectedHash, newHash string, session Session) error {
+	return f.withState(true, func(st *fileState) error {
+		i := slices.IndexFunc(st.Users, func(u User) bool { return u.ID == session.UserID })
+		if i < 0 {
+			return ErrNotFound
+		}
+		if !constantEqual(st.Users[i].PasswordHash, expectedHash) {
+			return ErrPasswordChanged
+		}
+		st.Users[i].PasswordHash = newHash
+		st.Users[i].UpdatedAt = session.CreatedAt
+		st.Sessions = slices.DeleteFunc(st.Sessions, func(s Session) bool {
+			return s.UserID == session.UserID || !s.ExpiresAt.After(session.CreatedAt)
+		})
+		st.Sessions = append(st.Sessions, session)
+		return nil
+	})
+}
+
 // DeleteUser removes a user along with all of their sessions and reset codes.
 // Deleting the last remaining admin returns ErrLastAdmin.
 func (f *FileStore) DeleteUser(id string) error {
@@ -200,7 +234,7 @@ func (f *FileStore) DeleteUser(id string) error {
 		if i < 0 {
 			return ErrNotFound
 		}
-		if st.Users[i].Role == RoleAdmin && countAdmins(st.Users) <= 1 {
+		if st.Users[i].Role == RoleAdmin && st.Users[i].PasswordHash != "" && countAdmins(st.Users) <= 1 {
 			return ErrLastAdmin
 		}
 		st.Users = slices.Delete(st.Users, i, i+1)
@@ -441,7 +475,7 @@ func appendUser(st *fileState, user User) (User, error) {
 func countAdmins(users []User) int {
 	n := 0
 	for _, u := range users {
-		if u.Role == RoleAdmin {
+		if u.Role == RoleAdmin && u.PasswordHash != "" {
 			n++
 		}
 	}

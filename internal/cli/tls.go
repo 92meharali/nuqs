@@ -174,19 +174,15 @@ func validExistingCert(certPath, keyPath, addr string, now time.Time) bool {
 	if !now.After(leaf.NotBefore) || !leaf.NotAfter.After(now.Add(7*24*time.Hour)) {
 		return false
 	}
-	// If binding a specific non-wildcard IP, make sure it is in the cert's SANs.
-	if host, _, err := net.SplitHostPort(addr); err == nil && host != "" {
-		if ip := net.ParseIP(host); ip != nil && !ip.IsUnspecified() {
-			found := false
-			for _, certIP := range leaf.IPAddresses {
-				if certIP.Equal(ip) {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return false
-			}
+	dnsNames, ips := collectSANs(addr)
+	for _, name := range dnsNames {
+		if leaf.VerifyHostname(name) != nil {
+			return false
+		}
+	}
+	for _, ip := range ips {
+		if leaf.VerifyHostname(ip.String()) != nil {
+			return false
 		}
 	}
 	return true

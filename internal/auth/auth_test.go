@@ -371,7 +371,7 @@ func TestAuthEdgeCasesAndBranches(t *testing.T) {
 	if _, _, _, err := svc.CompleteSetup("127.0.0.1", code, "admin", "short"); err == nil {
 		t.Error("short password should fail")
 	}
-	admin, tok, _, err := svc.CompleteSetup("127.0.0.1", code, "admin", "strong-password-1")
+	admin, _, _, err := svc.CompleteSetup("127.0.0.1", code, "admin", "strong-password-1")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -422,7 +422,7 @@ func TestAuthEdgeCasesAndBranches(t *testing.T) {
 
 	// Gate additional branches: authenticated GET /login redirects, GET /setup redirects, unauth POST returns 401.
 	h := svc.Gate(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusOK) }))
-	_, tok, _, err = svc.Login("127.0.0.1", "admin", "admin-reset-pass-1")
+	_, tok, _, err := svc.Login("127.0.0.1", "admin", "admin-reset-pass-1")
 	if err != nil {
 		t.Fatal(err)
 	}

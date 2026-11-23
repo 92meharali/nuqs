@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -328,7 +329,22 @@ func (h *Handler) changePasswordPost(w http.ResponseWriter, r *http.Request) {
 	next := r.FormValue("new_password")
 	confirm := r.FormValue("confirm_password")
 
-	renderErr := func(status int, msg string) {
+	returnTo := r.FormValue("return_to")
+	redirectAccount := func(key, value string) {
+		dest, _ := url.Parse(auth.SafeNext(returnTo))
+		if dest == nil {
+			dest = &url.URL{Path: "/scans"}
+		}
+		q := dest.Query()
+		q.Set(key, value)
+		dest.RawQuery = q.Encode()
+		http.Redirect(w, r, dest.RequestURI(), http.StatusSeeOther)
+	}
+	renderErr := func(status int, msg, code string) {
+		if returnTo != "" {
+			redirectAccount("account_error", code)
+			return
+		}
 		data := scansData{SuggestedTarget: suggestedTarget(h.Service.AllowedScope)}
 		for _, s := range h.Scans.List() {
 			if s.Status == tools.ScanRunning {
@@ -345,24 +361,24 @@ func (h *Handler) changePasswordPost(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if next != confirm {
-		renderErr(http.StatusBadRequest, "New passwords do not match.")
+		renderErr(http.StatusBadRequest, "New passwords do not match.", "mismatch")
 		return
 	}
 	token, err := h.Auth.ChangePassword(principal.UserID, current, next)
 	var ve *auth.ValidationError
 	switch {
 	case errors.Is(err, auth.ErrInvalidCredentials):
-		renderErr(http.StatusUnauthorized, "Current password is incorrect.")
+		renderErr(http.StatusUnauthorized, "Current password is incorrect.", "current-password")
 		return
 	case errors.As(err, &ve):
-		renderErr(http.StatusBadRequest, ve.Message)
+		renderErr(http.StatusBadRequest, ve.Message, "invalid-password")
 		return
 	case err != nil:
-		renderErr(http.StatusInternalServerError, "Could not update password.")
+		renderErr(http.StatusInternalServerError, "Could not update password.", "update")
 		return
 	}
 	h.Auth.SetSessionCookie(w, r, token)
-	http.Redirect(w, r, "/scans?notice=password-updated", http.StatusSeeOther)
+	redirectAccount("notice", "password-updated")
 }
 
 // --- Admin users page ---
@@ -490,7 +506,7 @@ func (h *Handler) renderUsers(w http.ResponseWriter, r *http.Request, status int
 	}
 	admins := 0
 	for _, u := range list {
-		if u.Role == store.RoleAdmin {
+		if u.Role == store.RoleAdmin && !u.PendingPassword {
 			admins++
 		}
 	}
@@ -499,7 +515,7 @@ func (h *Handler) renderUsers(w http.ResponseWriter, r *http.Request, status int
 		rows = append(rows, userRow{
 			UserView:    u,
 			IsSelf:      u.ID == actor.UserID,
-			IsLastAdmin: u.Role == store.RoleAdmin && admins <= 1,
+			IsLastAdmin: u.Role == store.RoleAdmin && !u.PendingPassword && admins <= 1,
 		})
 	}
 	h.renderStatus(w, r, status, "users.html", page{

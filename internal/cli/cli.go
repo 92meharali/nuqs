@@ -333,7 +333,7 @@ func (a *App) serve(ctx context.Context, args []string) int {
 	apiHandler.Register(mux)
 	webHandler.Register(mux)
 
-	var handler http.Handler = authSvc.Gate(mux)
+	handler := authSvc.Gate(mux)
 	if isLoopback && !useTLS {
 		handler = api.LocalOnly(*addr, handler)
 	}
