@@ -47,6 +47,9 @@ The main screen. Three tabs:
 
 A short **since last scan** line at the top: "2 new, 3 fixed, 10 still open".
 
+Finished scans can be exported as JSON, a self-contained printable HTML report,
+PDF or spreadsheet-ready CSV.
+
 ### Finding detail (W2)
 
 - Title, severity and **confirmed** or **inferred**

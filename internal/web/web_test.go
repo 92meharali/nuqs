@@ -211,7 +211,8 @@ func TestCompletedScanPages(t *testing.T) {
 	}
 	mustContain(t, "hosts tab", body, "Finished with errors in", `aria-current="page">Hosts`, `href="/scans/`+s.ID+`/hosts/127.0.0.1"`,
 		"lab.local", `class="sevbar"`, "Scan details", "Full scan", "conic-gradient", "1 check couldn", "These aren't findings",
-		`href="/api/scans/`+s.ID+`/report" download`)
+		`href="/api/scans/`+s.ID+`/report" download`, `href="/api/scans/`+s.ID+`/report/html" download`,
+		`href="/api/scans/`+s.ID+`/report/pdf" download`, `href="/api/scans/`+s.ID+`/report/csv" download`)
 	if strings.Contains(body, xss) || strings.Contains(body, "data-watch") || strings.Contains(body, `id="stopScan"`) {
 		t.Error("finished scan page must escape errors and not watch or offer stop")
 	}

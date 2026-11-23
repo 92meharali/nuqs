@@ -3,6 +3,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/nuqs-org/nuqs/internal/output"
 	"github.com/nuqs-org/nuqs/internal/tools"
 )
 
@@ -42,6 +44,7 @@ func (h *Handler) registerScans(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/scans", h.startScan)
 	mux.HandleFunc("GET /api/scans/{id}", h.getScan)
 	mux.HandleFunc("GET /api/scans/{id}/report", h.downloadReport)
+	mux.HandleFunc("GET /api/scans/{id}/report/{format}", h.downloadReport)
 	mux.HandleFunc("GET /api/scans/{id}/events", h.scanEvents)
 	mux.HandleFunc("POST /api/scans/{id}/stop", h.stopScan)
 }
@@ -124,12 +127,34 @@ func (h *Handler) downloadReport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "This scan has no report yet.", http.StatusNotFound)
 		return
 	}
-	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="nuqs-scan-%s.json"`, s.ID))
-	w.Header().Set("Content-Type", "application/json")
+	format := r.PathValue("format")
+	if format == "" {
+		format = "json"
+	}
+	var body bytes.Buffer
+	contentType := ""
+	var err error
+	switch format {
+	case "json":
+		contentType, err = "application/json", output.JSON(&body, s.Report)
+	case "html":
+		contentType, err = "text/html; charset=utf-8", output.HTML(&body, s.Report)
+	case "pdf":
+		contentType, err = "application/pdf", output.PDF(&body, s.Report)
+	case "csv":
+		contentType, err = "text/csv; charset=utf-8", output.CSV(&body, s.Report)
+	default:
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		http.Error(w, "Could not create this report.", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="nuqs-scan-%s.%s"`, s.ID, format))
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	_ = enc.Encode(s.Report)
+	_, _ = w.Write(body.Bytes())
 }
 
 func (h *Handler) stopScan(w http.ResponseWriter, r *http.Request) {
