@@ -113,7 +113,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /scans/new", h.newPage)
 	mux.HandleFunc("GET /scans/new/{kind}", h.settingsPage)
 	mux.HandleFunc("GET /scans/{id}", h.scanPage)
-	mux.HandleFunc("GET /scans/", h.scansSubtree)
+	mux.HandleFunc("GET /scans/{id}/report/print", h.printPage)
 	mux.HandleFunc("GET /scans/{id}/hosts/{host}", h.hostPage)
 	mux.HandleFunc("GET /scans/{id}/vulns/{check}", h.findingPage)
 	mux.HandleFunc("GET /checks", h.checksPage)
@@ -521,21 +521,12 @@ func (h *Handler) printPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not create this report.", http.StatusInternalServerError)
 		return
 	}
-	html := bytes.Replace(body.Bytes(), []byte("</body>"), []byte(`<script src="/static/print.js"></script></body>`), 1)
+	title := template.HTMLEscapeString(fmt.Sprintf("Nuqs scan %s — %s", s.ID, s.Started.Format("2006-01-02")))
+	html := bytes.Replace(body.Bytes(), []byte("<title>Nuqs scan report</title>"), []byte("<title>"+title+"</title>"), 1)
+	html = bytes.Replace(html, []byte("</body>"), []byte(`<script src="/static/print.js"></script></body>`), 1)
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	writeHTML(w, html)
-}
-
-func (h *Handler) scansSubtree(w http.ResponseWriter, r *http.Request) {
-	path := strings.TrimPrefix(r.URL.Path, "/scans/")
-	parts := strings.Split(strings.TrimSuffix(path, "/"), "/")
-	if len(parts) == 2 && parts[1] == "print" && parts[0] != "" {
-		r.SetPathValue("id", parts[0])
-		h.printPage(w, r)
-		return
-	}
-	http.NotFound(w, r)
 }
 
 // scanDetails is the "Scan details" side panel.
