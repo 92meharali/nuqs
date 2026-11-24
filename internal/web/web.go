@@ -160,7 +160,9 @@ func (h *Handler) render(w http.ResponseWriter, name string, p page) {
 
 func writeHTML(w http.ResponseWriter, body []byte) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Content-Security-Policy", cspPolicy)
+	if w.Header().Get("Content-Security-Policy") == "" {
+		w.Header().Set("Content-Security-Policy", cspPolicy)
+	}
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("X-Frame-Options", "DENY")
 	w.Header().Set("Referrer-Policy", "no-referrer")
