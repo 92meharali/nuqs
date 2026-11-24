@@ -23,7 +23,7 @@ htmx is a JavaScript file, not a Go dependency, so the Go code stays standard li
 ```
 browser ──► nuqs serve (net/http)
               ├── /        HTML pages and fragments   (internal/web)
-              └── /api/    JSON for curl, scripts, CI  (internal/api)
+              └── /api/    JSON plus report downloads for scripts and CI  (internal/api)
                      │
                      ▼
               internal/tools  ← one set of actions: scan, results, diff, history

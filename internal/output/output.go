@@ -1,4 +1,4 @@
-// Package output prints a scan report, either as a table for people or as JSON for tools.
+// Package output writes scan reports for terminals, browsers and other tools.
 package output
 
 import (
