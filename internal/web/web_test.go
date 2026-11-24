@@ -212,7 +212,15 @@ func TestCompletedScanPages(t *testing.T) {
 	mustContain(t, "hosts tab", body, "Finished with errors in", `aria-current="page">Hosts`, `href="/scans/`+s.ID+`/hosts/127.0.0.1"`,
 		"lab.local", `class="sevbar"`, "Scan details", "Full scan", "conic-gradient", "1 check couldn", "These aren't findings",
 		`href="/api/scans/`+s.ID+`/report" download`, `href="/api/scans/`+s.ID+`/report/html" download`,
-		`href="/api/scans/`+s.ID+`/report/pdf" download`, `href="/api/scans/`+s.ID+`/report/csv" download`)
+		`href="/scans/`+s.ID+`/print" target="_blank"`, `href="/api/scans/`+s.ID+`/report/csv" download`)
+	printCode, printBody := get(t, h, "/scans/"+s.ID+"/print")
+	if printCode != http.StatusOK {
+		t.Fatalf("print page: %d", printCode)
+	}
+	mustContain(t, "print page", printBody, `src="/static/print.js"`, "Nuqs scan report")
+	if code, body := get(t, h, "/static/print.js"); code != http.StatusOK || !strings.Contains(body, "window.print") {
+		t.Error("print script should be available")
+	}
 	if strings.Contains(body, xss) || strings.Contains(body, "data-watch") || strings.Contains(body, `id="stopScan"`) {
 		t.Error("finished scan page must escape errors and not watch or offer stop")
 	}

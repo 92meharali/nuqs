@@ -341,3 +341,11 @@ const findingFilters = document.querySelector(".findingFilters");
 if (findingFilters) {
   findingFilters.addEventListener("change", () => findingFilters.submit());
 }
+
+const exportMenu = document.querySelector(".exportMenu");
+if (exportMenu) {
+  exportMenu.querySelectorAll("a").forEach(link => link.addEventListener("click", () => { exportMenu.open = false; }));
+  document.addEventListener("pointerdown", event => {
+    if (!exportMenu.contains(event.target)) exportMenu.open = false;
+  });
+}

@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -132,32 +131,6 @@ func TestCSV(t *testing.T) {
 	}
 }
 
-func TestPDF(t *testing.T) {
-	r := sample()
-	r.Findings[0].Fix = `Turn off (Telnet) \\ now.`
-	var b bytes.Buffer
-	if err := PDF(&b, r); err != nil {
-		t.Fatal(err)
-	}
-	out := b.String()
-	if !strings.HasPrefix(out, "%PDF-1.4") || !strings.HasSuffix(out, "%%EOF\n") {
-		t.Fatal("PDF is missing its header or trailer")
-	}
-	start := strings.LastIndex(out, "startxref\n")
-	if start < 0 {
-		t.Fatal("PDF has no startxref")
-	}
-	xrefText := out[start+len("startxref\n"):]
-	line, _, _ := strings.Cut(xrefText, "\n")
-	xref, err := strconv.Atoi(line)
-	if err != nil || xref >= len(out) || !strings.HasPrefix(out[xref:], "xref\n") {
-		t.Fatalf("bad xref offset %q", line)
-	}
-	if !strings.Contains(out, `Turn off \(Telnet\) \\\\ now.`) {
-		t.Error("PDF text delimiters were not escaped")
-	}
-}
-
 type failWriter struct{}
 
 func (failWriter) Write([]byte) (int, error) { return 0, errors.New("disk full") }
@@ -174,7 +147,7 @@ func TestWriteErrors(t *testing.T) {
 	if err := JSON(failWriter{}, sample()); err == nil {
 		t.Error("JSON should return write errors")
 	}
-	for name, write := range map[string]func(io.Writer, *engine.Report) error{"HTML": HTML, "CSV": CSV, "PDF": PDF} {
+	for name, write := range map[string]func(io.Writer, *engine.Report) error{"HTML": HTML, "CSV": CSV} {
 		if err := write(failWriter{}, sample()); err == nil {
 			t.Errorf("%s should return write errors", name)
 		}

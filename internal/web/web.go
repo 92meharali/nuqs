@@ -28,6 +28,7 @@ import (
 	"github.com/nuqs-org/nuqs/internal/check"
 	"github.com/nuqs-org/nuqs/internal/engine"
 	"github.com/nuqs-org/nuqs/internal/model"
+	"github.com/nuqs-org/nuqs/internal/output"
 	"github.com/nuqs-org/nuqs/internal/tools"
 )
 
@@ -112,6 +113,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /scans/new", h.newPage)
 	mux.HandleFunc("GET /scans/new/{kind}", h.settingsPage)
 	mux.HandleFunc("GET /scans/{id}", h.scanPage)
+	mux.HandleFunc("GET /scans/", h.scansSubtree)
 	mux.HandleFunc("GET /scans/{id}/hosts/{host}", h.hostPage)
 	mux.HandleFunc("GET /scans/{id}/vulns/{check}", h.findingPage)
 	mux.HandleFunc("GET /checks", h.checksPage)
@@ -504,6 +506,34 @@ func (h *Handler) scanPage(w http.ResponseWriter, r *http.Request) {
 		Crumbs: []crumb{{Label: "Scans", Href: "/scans"}, {Label: s.Name}},
 		Data:   data,
 	})
+}
+
+func (h *Handler) printPage(w http.ResponseWriter, r *http.Request) {
+	s, ok := h.Scans.Get(r.PathValue("id"))
+	if !ok || s.Report == nil {
+		http.NotFound(w, r)
+		return
+	}
+	var body bytes.Buffer
+	if err := output.HTML(&body, s.Report); err != nil {
+		http.Error(w, "Could not create this report.", http.StatusInternalServerError)
+		return
+	}
+	html := bytes.Replace(body.Bytes(), []byte("</body>"), []byte(`<script src="/static/print.js"></script></body>`), 1)
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	writeHTML(w, html)
+}
+
+func (h *Handler) scansSubtree(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimPrefix(r.URL.Path, "/scans/")
+	parts := strings.Split(strings.TrimSuffix(path, "/"), "/")
+	if len(parts) == 2 && parts[1] == "print" && parts[0] != "" {
+		r.SetPathValue("id", parts[0])
+		h.printPage(w, r)
+		return
+	}
+	http.NotFound(w, r)
 }
 
 // scanDetails is the "Scan details" side panel.

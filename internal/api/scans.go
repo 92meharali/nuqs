@@ -139,8 +139,6 @@ func (h *Handler) downloadReport(w http.ResponseWriter, r *http.Request) {
 		contentType, err = "application/json", output.JSON(&body, s.Report)
 	case "html":
 		contentType, err = "text/html; charset=utf-8", output.HTML(&body, s.Report)
-	case "pdf":
-		contentType, err = "application/pdf", output.PDF(&body, s.Report)
 	case "csv":
 		contentType, err = "text/csv; charset=utf-8", output.CSV(&body, s.Report)
 	default:

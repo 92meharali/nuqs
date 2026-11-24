@@ -88,7 +88,6 @@ func TestStartListGetDownload(t *testing.T) {
 	formats := []struct{ path, ext, contentType, body string }{
 		{"/api/scans/1/report", "json", "application/json", `"check_id": "telnet-open"`},
 		{"/api/scans/1/report/html", "html", "text/html; charset=utf-8", "Nuqs scan report"},
-		{"/api/scans/1/report/pdf", "pdf", "application/pdf", "%PDF-1.4"},
 		{"/api/scans/1/report/csv", "csv", "text/csv; charset=utf-8", "finding_id,severity,confidence"},
 	}
 	for _, format := range formats {
@@ -99,7 +98,7 @@ func TestStartListGetDownload(t *testing.T) {
 			t.Errorf("download %s: %d %v", format.ext, w.Code, w.Header())
 		}
 	}
-	if w := do(h, http.MethodGet, "/api/scans/1/report/docx", ""); w.Code != http.StatusNotFound {
+	if w := do(h, http.MethodGet, "/api/scans/1/report/pdf", ""); w.Code != http.StatusNotFound {
 		t.Errorf("unknown report format: %d", w.Code)
 	}
 	for _, path := range []string{"/api/scans/9", "/api/scans/9/report", "/api/scans/9/events"} {
