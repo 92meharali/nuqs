@@ -11,7 +11,7 @@
   {{if eq .Status "running"}}
   <dialog id="stopScanDialog" aria-labelledby="stopScanTitle" aria-describedby="stopScanDescription">
     <h2 id="stopScanTitle">Stop this scan?</h2>
-    <p id="stopScanDescription">The scan will end early and any unfinished results will be lost.</p>
+    <p id="stopScanDescription">It'll end now. Anything it found so far is kept, the rest of the checks won't run.</p>
     <div class="dialogActions">
       <button type="button" id="cancelStopScan">Keep scanning</button>
       <button type="button" class="danger" id="confirmStopScan">Stop scan</button>
