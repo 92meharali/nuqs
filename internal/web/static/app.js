@@ -309,7 +309,21 @@ function elapsed(seconds) {
 
 const stop = byId("stopScan");
 if (stop) {
-  stop.onclick = async () => {
+  const dialog = byId("stopScanDialog");
+  const cancel = byId("cancelStopScan");
+  const confirm = byId("confirmStopScan");
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape" || event.defaultPrevented || event.repeat ||
+        event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
+        stop.disabled || document.querySelector("dialog[open]") ||
+        document.activeElement?.closest("input, textarea, select, [contenteditable]")) return;
+    event.preventDefault();
+    stop.click();
+  });
+  stop.onclick = () => dialog.showModal();
+  cancel.onclick = () => dialog.close();
+  confirm.onclick = async () => {
+    dialog.close();
     stop.disabled = true;
     stop.textContent = "Stopping…";
     try {

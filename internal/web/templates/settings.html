@@ -1,5 +1,5 @@
 <!-- Settings for a new scan, in sections like System Settings: Basic, Discovery and Advanced. -->
-{{define "actions"}}<a class="button" href="/scans">Cancel</a><button type="submit" form="scanForm" class="primary" id="launch">Launch</button>{{end}}
+{{define "actions"}}<a class="button" href="/scans">Cancel</a><button type="submit" form="scanForm" class="primary" id="launch" aria-keyshortcuts="Enter" title="Launch scan (Enter from a single-line field)">Launch</button>{{end}}
 {{define "content"}}{{with .Data}}
 <section class="page settingsPage">
   <div class="pageHead">

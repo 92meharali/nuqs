@@ -1,5 +1,5 @@
 <!-- One scan: hosts and vulnerabilities tabs, with scan details and the severity ring on the side. -->
-{{define "actions"}}{{with .Data}}{{if eq .Status "running"}}<button type="button" id="stopScan" data-id="{{.ID}}">Stop</button>{{else if .Report}}<a class="button" href="/api/scans/{{.ID}}/report" download>Download JSON</a>{{end}}<a class="button primary" href="/scans/new">New scan</a>{{end}}{{end}}
+{{define "actions"}}{{with .Data}}{{if eq .Status "running"}}<button type="button" id="stopScan" aria-keyshortcuts="Escape" title="Stop scan (Esc)" data-id="{{.ID}}">Stop</button>{{else if .Report}}<a class="button" href="/api/scans/{{.ID}}/report" download>Download JSON</a>{{end}}<a class="button primary" href="/scans/new">New scan</a>{{end}}{{end}}
 {{define "content"}}{{with .Data}}
 <section class="page" {{if eq .Status "running"}}data-watch="{{.ID}}"{{end}}>
   <div class="pageHead">
@@ -9,6 +9,14 @@
   </div>
 
   {{if eq .Status "running"}}
+  <dialog id="stopScanDialog" aria-labelledby="stopScanTitle" aria-describedby="stopScanDescription">
+    <h2 id="stopScanTitle">Stop this scan?</h2>
+    <p id="stopScanDescription">It'll end now. Anything it found so far is kept, the rest of the checks won't run.</p>
+    <div class="dialogActions">
+      <button type="button" id="cancelStopScan">Keep scanning</button>
+      <button type="button" class="danger" id="confirmStopScan">Stop scan</button>
+    </div>
+  </dialog>
   <div class="card progressCard">
     <div class="spinner" aria-hidden="true"></div>
     <div>

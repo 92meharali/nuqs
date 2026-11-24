@@ -361,7 +361,7 @@ func TestRunningAndFailedScan(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, body := get(t, h, "/scans/"+s.ID)
-	mustContain(t, "running scan", body, `data-watch="`+s.ID+`"`, `id="stopScan"`, `class="spinner"`, "Scanning · 0%", "show up here when the scan finishes",
+	mustContain(t, "running scan", body, `data-watch="`+s.ID+`"`, `id="stopScan"`, `id="stopScanDialog"`, `id="cancelStopScan"`, `id="confirmStopScan"`, `class="spinner"`, "Scanning · 0%", "show up here when the scan finishes",
 		`role="progressbar"`, `aria-valuenow="0"`, `id="percentText">0%`, "Starting Nmap", "working out the time left")
 	_, body = get(t, h, "/scans")
 	mustContain(t, "list while running", body, `data-watch="`+s.ID+`"`, `id="statusLabel">Scanning · 0%`)
