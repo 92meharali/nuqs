@@ -257,6 +257,51 @@ func TestEvents(t *testing.T) {
 	}
 }
 
+type streamingScanner struct {
+	host    model.Host
+	started chan struct{}
+	release chan struct{}
+}
+
+func (s streamingScanner) Scan(context.Context, []string) ([]model.Host, error) {
+	return []model.Host{s.host}, nil
+}
+func (s streamingScanner) StreamScan(ctx context.Context, _ []string, host func(model.Host), _ func(ScannerProgress)) error {
+	host(s.host)
+	select {
+	case <-s.release:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func TestStreamingScannerStartsChecksBeforeDiscoveryFinishes(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	c := newCheck("web", model.Low, []string{"http"}, func(context.Context, check.Target) (*check.Result, error) {
+		close(started)
+		return &check.Result{Evidence: "checked"}, nil
+	})
+	s := streamingScanner{host: twoHosts[0], started: started, release: release}
+	done := make(chan struct{})
+	go func() {
+		_, _ = (&Engine{Scanner: s, Checks: []check.Check{c}}).Run(context.Background(), nil)
+		close(done)
+	}()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("check did not start while discovery was still streaming")
+	}
+	close(release)
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("streaming scan did not finish")
+	}
+}
+
 // progressScanner is a fakeScanner that also reports progress.
 type progressScanner struct {
 	fakeScanner

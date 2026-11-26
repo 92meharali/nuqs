@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nuqs-org/nuqs/internal/engine"
 	"github.com/nuqs-org/nuqs/internal/model"
 )
 
@@ -119,6 +120,13 @@ type Events struct {
 type Scanner struct {
 	Runner  Runner
 	Options Options
+}
+
+// StreamScan discovers hosts while Nmap runs, forwarding each host immediately.
+func (s Scanner) StreamScan(ctx context.Context, targets []string, host func(model.Host), progress func(engine.ScannerProgress)) error {
+	return s.Stream(ctx, targets, Events{Host: host, Progress: func(p Progress) {
+		progress(engine.ScannerProgress{Task: p.Task, Percent: p.Percent, Remaining: p.Remaining})
+	}})
 }
 
 // Scan runs Nmap against the targets and returns the hosts that are up.

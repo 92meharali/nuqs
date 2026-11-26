@@ -46,6 +46,12 @@ type ProgressScanner interface {
 	ScanWithProgress(ctx context.Context, targets []string, progress func(ScannerProgress)) ([]model.Host, error)
 }
 
+// StreamingScanner discovers hosts incrementally while Nmap is running.
+type StreamingScanner interface {
+	HostScanner
+	StreamScan(ctx context.Context, targets []string, host func(model.Host), progress func(ScannerProgress)) error
+}
+
 // ScannerProgress is one progress update from the HostScanner.
 type ScannerProgress struct {
 	Task      string        // what it's doing, like "Connect Scan" or "Service scan"
@@ -61,6 +67,7 @@ const (
 	DiscoveryStarted EventKind = "discovery_started"
 	ScanProgress     EventKind = "scan_progress"  // Progress = where Nmap is, comes many times
 	DiscoveryDone    EventKind = "discovery_done" // Count = hosts found
+	HostFound        EventKind = "host_found"     // Host is set to the newly discovered host
 	ChecksStarted    EventKind = "checks_started" // Count = checks to run
 	CheckDone        EventKind = "check_done"     // one check finished on one service
 	ScanDone         EventKind = "scan_done"
@@ -68,13 +75,14 @@ const (
 
 // Event is sent to OnEvent so the CLI and the web UI can show progress.
 type Event struct {
-	Kind     EventKind
-	Host     string
-	Port     int
-	CheckID  string
-	Count    int
-	Err      error           // set on CheckDone when the check failed
-	Progress ScannerProgress // set on ScanProgress
+	Kind       EventKind
+	Host       string
+	Discovered model.Host
+	Port       int
+	CheckID    string
+	Count      int
+	Err        error           // set on CheckDone when the check failed
+	Progress   ScannerProgress // set on ScanProgress
 }
 
 // CheckError records a check that couldn't finish. It is not a finding.
@@ -134,6 +142,9 @@ func (e *Engine) Run(ctx context.Context, targets []string) (*Report, error) {
 	emit(Event{Kind: DiscoveryStarted})
 	var hosts []model.Host
 	var err error
+	if ss, ok := e.Scanner.(StreamingScanner); ok && e.OnEvent != nil {
+		return e.runStreaming(ctx, targets, ss, rep, emit)
+	}
 	if ps, ok := e.Scanner.(ProgressScanner); ok && e.OnEvent != nil {
 		hosts, err = ps.ScanWithProgress(ctx, targets, func(p ScannerProgress) {
 			emit(Event{Kind: ScanProgress, Progress: p})
@@ -192,6 +203,72 @@ func (e *Engine) Run(ctx context.Context, targets []string) (*Report, error) {
 		emit(ev)
 	})
 
+	sortReport(rep)
+	rep.Finished = time.Now()
+	emit(Event{Kind: ScanDone, Count: len(rep.Findings)})
+	return rep, ctx.Err()
+}
+
+func (e *Engine) runStreaming(ctx context.Context, targets []string, scanner StreamingScanner, rep *Report, emit func(Event)) (*Report, error) {
+	var mu sync.Mutex
+	var hosts []model.Host
+	checkCount := 0
+	var wg sync.WaitGroup
+	queue := make(chan job)
+	workers := e.Workers
+	if workers <= 0 {
+		workers = DefaultWorkers
+	}
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := range queue {
+				res, err := e.runOne(ctx, j)
+				in := j.c.Info()
+				mu.Lock()
+				if err != nil {
+					rep.Errors = append(rep.Errors, CheckError{CheckID: in.ID, Host: j.t.Host, Port: j.t.Service.Port, Error: err.Error()})
+				} else if res != nil {
+					conf := res.Confidence
+					if conf == "" {
+						conf = model.Confirmed
+					}
+					if conf.Valid() {
+						rep.Findings = append(rep.Findings, model.Finding{ID: model.FindingID(j.t.Host, in.ID, j.t.Service.Port, j.t.Service.Protocol), CheckID: in.ID, Title: in.Title, Severity: in.Severity, Confidence: conf, Host: j.t.Host, Port: j.t.Service.Port, Protocol: j.t.Service.Protocol, Evidence: res.Evidence, Fix: in.Fix})
+					}
+				}
+				mu.Unlock()
+				emit(Event{Kind: CheckDone, Host: j.t.Host, Port: j.t.Service.Port, CheckID: in.ID, Err: err})
+			}
+		}()
+	}
+	err := scanner.StreamScan(ctx, targets, func(h model.Host) {
+		mu.Lock()
+		hosts = append(hosts, h)
+		rep.Hosts = slices.Clone(hosts)
+		mu.Unlock()
+		emit(Event{Kind: HostFound, Discovered: h})
+		for _, svc := range h.Services {
+			for _, c := range e.Checks {
+				if check.Applies(c.Info(), svc) {
+					checkCount++
+					select {
+					case queue <- job{c: c, t: check.Target{Host: h.Address, Service: svc}}:
+					case <-ctx.Done():
+						return
+					}
+				}
+			}
+		}
+	}, func(p ScannerProgress) { emit(Event{Kind: ScanProgress, Progress: p}) })
+	emit(Event{Kind: ChecksStarted, Count: checkCount})
+	close(queue)
+	wg.Wait()
+	if err != nil {
+		return nil, fmt.Errorf("discovery failed: %w", err)
+	}
+	emit(Event{Kind: DiscoveryDone, Count: len(hosts)})
 	sortReport(rep)
 	rep.Finished = time.Now()
 	emit(Event{Kind: ScanDone, Count: len(rep.Findings)})

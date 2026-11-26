@@ -879,6 +879,8 @@ func (a *App) progress(ev engine.Event) {
 	switch ev.Kind {
 	case engine.DiscoveryStarted:
 		fmt.Fprintln(a.Stderr, "Finding hosts and open ports with Nmap...")
+	case engine.HostFound:
+		fmt.Fprintf(a.Stderr, "Found %s with %d open %s.\n", ev.Discovered.Address, len(ev.Discovered.Services), plural(len(ev.Discovered.Services), "service", "services"))
 	case engine.DiscoveryDone:
 		fmt.Fprintf(a.Stderr, "Found %d %s.\n", ev.Count, plural(ev.Count, "host", "hosts"))
 	case engine.ChecksStarted:

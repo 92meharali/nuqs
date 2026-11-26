@@ -16,6 +16,7 @@ import (
 
 	"github.com/nuqs-org/nuqs/internal/diff"
 	"github.com/nuqs-org/nuqs/internal/engine"
+	"github.com/nuqs-org/nuqs/internal/model"
 	"github.com/nuqs-org/nuqs/internal/progress"
 	"github.com/nuqs-org/nuqs/internal/store"
 )
@@ -224,6 +225,12 @@ func (m *Scans) run(ctx context.Context, e *entry, valid ValidatedScan) {
 		m.update(e, func(s *Scan) {
 			e.tracker.Add(ev, time.Now())
 			switch ev.Kind {
+			case engine.HostFound:
+				if s.Report == nil {
+					s.Report = &engine.Report{Targets: s.Targets, Started: s.Started, Hosts: []model.Host{}, Findings: []model.Finding{}, Errors: []engine.CheckError{}}
+				}
+				s.Report.Hosts = append(s.Report.Hosts, ev.Discovered)
+				s.HostsFound = len(s.Report.Hosts)
 			case engine.DiscoveryDone:
 				s.HostsFound = ev.Count
 			case engine.ChecksStarted:
