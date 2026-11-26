@@ -236,6 +236,9 @@ func (e *Engine) runStreaming(ctx context.Context, targets []string, scanner Str
 					}
 					if conf.Valid() {
 						rep.Findings = append(rep.Findings, model.Finding{ID: model.FindingID(j.t.Host, in.ID, j.t.Service.Port, j.t.Service.Protocol), CheckID: in.ID, Title: in.Title, Severity: in.Severity, Confidence: conf, Host: j.t.Host, Port: j.t.Service.Port, Protocol: j.t.Service.Protocol, Evidence: res.Evidence, Fix: in.Fix})
+					} else {
+						err = fmt.Errorf("check returned an unknown confidence %q", conf)
+						rep.Errors = append(rep.Errors, CheckError{CheckID: in.ID, Host: j.t.Host, Port: j.t.Service.Port, Error: err.Error()})
 					}
 				}
 				mu.Unlock()
@@ -253,6 +256,7 @@ func (e *Engine) runStreaming(ctx context.Context, targets []string, scanner Str
 			for _, c := range e.Checks {
 				if check.Applies(c.Info(), svc) {
 					checkCount++
+					emit(Event{Kind: ChecksStarted, Count: checkCount})
 					select {
 					case queue <- job{c: c, t: check.Target{Host: h.Address, Service: svc}}:
 					case <-ctx.Done():
@@ -262,7 +266,6 @@ func (e *Engine) runStreaming(ctx context.Context, targets []string, scanner Str
 			}
 		}
 	}, func(p ScannerProgress) { emit(Event{Kind: ScanProgress, Progress: p}) })
-	emit(Event{Kind: ChecksStarted, Count: checkCount})
 	close(queue)
 	wg.Wait()
 	if err != nil {

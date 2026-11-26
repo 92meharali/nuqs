@@ -259,7 +259,6 @@ func TestEvents(t *testing.T) {
 
 type streamingScanner struct {
 	host    model.Host
-	started chan struct{}
 	release chan struct{}
 }
 
@@ -283,7 +282,7 @@ func TestStreamingScannerStartsChecksBeforeDiscoveryFinishes(t *testing.T) {
 		close(started)
 		return &check.Result{Evidence: "checked"}, nil
 	})
-	s := streamingScanner{host: twoHosts[0], started: started, release: release}
+	s := streamingScanner{host: twoHosts[0], release: release}
 	done := make(chan struct{})
 	go func() {
 		_, _ = (&Engine{Scanner: s, Checks: []check.Check{c}}).Run(context.Background(), nil)
