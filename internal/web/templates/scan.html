@@ -115,6 +115,7 @@
         <ul class="errorList">{{range .Errors}}<li><span class="mono">{{.Host}}:{{.Port}}</span> · {{.CheckID}} · {{.Error}}</li>{{end}}</ul>
       </div>
       {{end}}
+      {{if eq .Status "stopped"}}<p class="emptyRow card">Stopped before Nmap finished. Findings and hosts discovered so far are shown above; remaining checks did not run.</p>{{end}}
       {{else if eq .Status "running"}}
       <p class="emptyRow">Hosts and findings show up here when the scan finishes.</p>
       {{else if eq .Status "stopped"}}

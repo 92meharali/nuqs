@@ -301,6 +301,28 @@ func TestStreamingScannerStartsChecksBeforeDiscoveryFinishes(t *testing.T) {
 	}
 }
 
+func TestStreamingScannerReturnsPartialReportWhenStopped(t *testing.T) {
+	release := make(chan struct{})
+	c := newCheck("web", model.Low, []string{"http"}, func(context.Context, check.Target) (*check.Result, error) {
+		return &check.Result{Evidence: "checked"}, nil
+	})
+	ctx, cancel := context.WithCancel(context.Background())
+	started := make(chan struct{})
+	s := streamingScanner{host: twoHosts[0], release: release}
+	go func() {
+		<-started
+		cancel()
+	}()
+	close(started)
+	rep, err := (&Engine{Scanner: s, Checks: []check.Check{c}}).Run(ctx, nil)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want context.Canceled", err)
+	}
+	if rep == nil || len(rep.Hosts) == 0 {
+		t.Fatalf("partial report = %#v, want discovered hosts", rep)
+	}
+}
+
 // progressScanner is a fakeScanner that also reports progress.
 type progressScanner struct {
 	fakeScanner

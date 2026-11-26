@@ -212,7 +212,6 @@ func (e *Engine) Run(ctx context.Context, targets []string) (*Report, error) {
 func (e *Engine) runStreaming(ctx context.Context, targets []string, scanner StreamingScanner, rep *Report, emit func(Event)) (*Report, error) {
 	var mu sync.Mutex
 	var hosts []model.Host
-	checkCount := 0
 	var wg sync.WaitGroup
 	queue := make(chan job)
 	workers := e.Workers
@@ -252,11 +251,11 @@ func (e *Engine) runStreaming(ctx context.Context, targets []string, scanner Str
 		rep.Hosts = slices.Clone(hosts)
 		mu.Unlock()
 		emit(Event{Kind: HostFound, Discovered: h})
+		hostJobs := 0
 		for _, svc := range h.Services {
 			for _, c := range e.Checks {
 				if check.Applies(c.Info(), svc) {
-					checkCount++
-					emit(Event{Kind: ChecksStarted, Count: checkCount})
+					hostJobs++
 					select {
 					case queue <- job{c: c, t: check.Target{Host: h.Address, Service: svc}}:
 					case <-ctx.Done():
@@ -265,10 +264,16 @@ func (e *Engine) runStreaming(ctx context.Context, targets []string, scanner Str
 				}
 			}
 		}
+		emit(Event{Kind: ChecksStarted, Host: h.Address, Count: hostJobs})
 	}, func(p ScannerProgress) { emit(Event{Kind: ScanProgress, Progress: p}) })
 	close(queue)
 	wg.Wait()
 	if err != nil {
+		sortReport(rep)
+		rep.Finished = time.Now()
+		if ctx.Err() != nil {
+			return rep, ctx.Err()
+		}
 		return nil, fmt.Errorf("discovery failed: %w", err)
 	}
 	emit(Event{Kind: DiscoveryDone, Count: len(hosts)})
