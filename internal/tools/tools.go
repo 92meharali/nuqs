@@ -230,7 +230,7 @@ func (s *Service) ValidateScan(req ScanRequest) (ValidatedScan, error) {
 		if !ok {
 			message := "Enter valid ports such as 22,80,443 or 1-1000."
 			if strings.Contains(strings.ToUpper(ports), "U:") {
-				message = "UDP ports are not supported yet; use TCP ports such as 22,80,443 or 1-1000."
+				message = "UDP ports aren't supported yet, use TCP ports like 22,80,443 or 1-1000."
 			}
 			return ValidatedScan{}, &ValidationError{
 				Message: message,

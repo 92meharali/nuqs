@@ -186,7 +186,7 @@ func TestValidateScan(t *testing.T) {
 func TestValidateScanRejectsUDPPorts(t *testing.T) {
 	svc := newTestService(&fakeRunner{})
 	_, err := svc.ValidateScan(ScanRequest{Target: "127.0.0.1", Ports: "22,U:53"})
-	if err == nil || !strings.Contains(err.Error(), "UDP ports are not supported") {
+	if err == nil || !strings.Contains(err.Error(), "UDP ports aren't supported") {
 		t.Fatalf("expected clear UDP-port error, got %v", err)
 	}
 }

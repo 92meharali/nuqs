@@ -154,6 +154,19 @@ func (a *App) scan(ctx context.Context, args []string) int {
 		fs.Usage()
 		return ExitUsage
 	}
+	portSpec := strings.TrimSpace(*ports)
+	if portSpec != "" {
+		normalized, ok := tools.NormalizePorts(portSpec)
+		if !ok {
+			if strings.Contains(strings.ToUpper(portSpec), "U:") {
+				fmt.Fprintln(a.Stderr, "UDP ports aren't supported yet, use TCP ports like 22,80,443 or 1-1000.")
+			} else {
+				fmt.Fprintln(a.Stderr, "Enter valid ports such as 22,80,443 or 1-1000.")
+			}
+			return ExitUsage
+		}
+		portSpec = normalized
+	}
 	limit := int64(target.DefaultLimit)
 	if *force {
 		limit = 0
@@ -179,7 +192,7 @@ func (a *App) scan(ctx context.Context, args []string) int {
 	}
 	rep, err := svc.RunValidated(ctx, tools.ValidatedScan{
 		Targets:  targets,
-		Ports:    *ports,
+		Ports:    portSpec,
 		SkipPing: *skipPing,
 		Workers:  *workers,
 		Timeout:  *timeout,
@@ -202,7 +215,7 @@ func (a *App) scan(ctx context.Context, args []string) int {
 		return ExitError
 	}
 	if !*noSave {
-		a.saveScan(ctx, targets, rep, err, scanSettings{Target: strings.Join(specs, ", "), Ports: *ports, SkipPing: *skipPing, Workers: *workers, Timeout: timeout.String()})
+		a.saveScan(ctx, targets, rep, err, scanSettings{Target: strings.Join(specs, ", "), Ports: portSpec, SkipPing: *skipPing, Workers: *workers, Timeout: timeout.String()})
 	}
 	if ctx.Err() != nil {
 		return ExitError
