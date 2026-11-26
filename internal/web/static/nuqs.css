@@ -37,7 +37,8 @@ button:hover:enabled,.button:hover {background:var(--hover)}
 button:disabled,select:disabled,input:disabled {opacity:.5;cursor:default}
 .primary,.primary:hover:enabled {background:var(--accent);color:var(--bg);border-color:var(--accent)}
 .primary:hover:enabled,a.primary:hover {opacity:.88;background:var(--accent)}
-.danger,.danger:hover:enabled {background:var(--critical);border-color:var(--critical);color:#fff}
+.danger,.danger:hover:enabled {background:var(--critical);border-color:var(--critical);color:#141414}
+:root.light .danger,:root.light .danger:hover:enabled {color:#fff}
 .iconButton {width:30px;padding:0;justify-content:center}
 #themeToggle .iconMoon {display:none}
 :root.light #themeToggle .iconSun {display:none}
