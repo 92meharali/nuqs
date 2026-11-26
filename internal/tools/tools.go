@@ -243,8 +243,12 @@ func (s *Service) ValidateScan(req ScanRequest) (ValidatedScan, error) {
 	if ports != "" {
 		normalized, ok := NormalizePorts(ports)
 		if !ok {
+			message := "Enter valid ports such as 22,80,443 or 1-1000."
+			if strings.Contains(strings.ToUpper(ports), "U:") {
+				message = "UDP ports aren't supported yet, use TCP ports like 22,80,443 or 1-1000."
+			}
 			return ValidatedScan{}, &ValidationError{
-				Message: "Enter valid ports such as 22,80,443 or 1-1000.",
+				Message: message,
 			}
 		}
 		ports = normalized
@@ -392,8 +396,9 @@ func FriendlyError(err error) string {
 	return msg
 }
 
-// NormalizePorts validates and strips spaces from comma-separated TCP/UDP port
+// NormalizePorts validates and strips spaces from comma-separated TCP port
 // numbers and ranges like "22, 80, 443" or "1-1000" so Nmap receives a clean -p value.
+// UDP selectors are rejected because Nuqs currently runs TCP connect scans only.
 func NormalizePorts(spec string) (string, bool) {
 	if strings.HasPrefix(spec, "-") {
 		return "", false
@@ -407,6 +412,9 @@ func NormalizePorts(spec string) (string, bool) {
 		}
 		prefix := ""
 		if len(part) >= 2 && part[1] == ':' && (part[0] == 'T' || part[0] == 'U') {
+			if part[0] == 'U' {
+				return "", false
+			}
 			prefix = part[:2]
 			part = part[2:]
 		}

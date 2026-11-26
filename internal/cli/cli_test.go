@@ -138,6 +138,16 @@ func TestScanUsageErrors(t *testing.T) {
 	}
 }
 
+func TestScanRejectsUDPPorts(t *testing.T) {
+	app, _, errOut := newApp(t, &fakeRunner{})
+	if code := app.Run(context.Background(), []string{"scan", "127.0.0.1", "-p", "U:53"}); code != ExitUsage {
+		t.Fatalf("exit = %d, want %d", code, ExitUsage)
+	}
+	if !strings.Contains(errOut.String(), "UDP ports aren't supported yet") {
+		t.Fatalf("stderr = %q", errOut.String())
+	}
+}
+
 func TestForceAllowsBigScans(t *testing.T) {
 	app, _, errOut := newApp(t, &fakeRunner{})
 	if code := app.Run(context.Background(), []string{"scan", "--force", "10.0.0.0/16"}); code != ExitOK {
