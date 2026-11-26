@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/nuqs-org/nuqs/internal/diff"
 	"github.com/nuqs-org/nuqs/internal/engine"
 	"github.com/nuqs-org/nuqs/internal/progress"
 	"github.com/nuqs-org/nuqs/internal/store"
@@ -443,4 +444,48 @@ func (m *Scans) StopAll() {
 	for _, e := range m.list {
 		e.cancel()
 	}
+}
+
+// FindingTimelines builds a chronological timeline across every scan of the
+// same targets and ports as scanID for each finding ID in findingIDs.
+func (m *Scans) FindingTimelines(scanID string, findingIDs []string) map[string]diff.Timeline {
+	out := map[string]diff.Timeline{}
+	if len(findingIDs) == 0 {
+		return out
+	}
+	reports := m.sameScopeReports(scanID)
+	if len(reports) == 0 {
+		return out
+	}
+	for _, fid := range findingIDs {
+		if tl, ok := diff.BuildTimeline(fid, reports); ok {
+			out[fid] = tl
+		}
+	}
+	return out
+}
+
+func (m *Scans) sameScopeReports(scanID string) []diff.ScanReport {
+	if m.Store == nil {
+		return nil
+	}
+	n, err := strconv.ParseInt(scanID, 10, 64)
+	if err != nil {
+		return nil
+	}
+	runs, err := m.Store.SameScopeRuns(n)
+	if err != nil {
+		return nil
+	}
+	reports := make([]diff.ScanReport, 0, len(runs))
+	for _, r := range runs {
+		reports = append(reports, diff.ScanReport{
+			ID:      r.ID,
+			Name:    r.Name,
+			Started: r.Started,
+			Targets: r.Targets,
+			Report:  r.Report,
+		})
+	}
+	return reports
 }

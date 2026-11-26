@@ -64,7 +64,7 @@ PDF or spreadsheet-ready CSV.
 - **What we saw:** multi-line evidence and detected service details for every affected host
 - **How to fix it:** the fix text with a **Copy fix** button
 - **References:** links to standards, vendor docs and CVEs shared from `check.Info.References`
-- First seen and last seen
+- First seen, last seen and a timeline across scans of the same targets and ports (open, fixed, not checked), flagging findings that came back after being fixed
 - A **Check again** button that re-runs just this check on just this host
 
 ### Check library (`/checks` and `/checks/{id}`)

@@ -27,6 +27,7 @@ import (
 
 	"github.com/nuqs-org/nuqs/internal/auth"
 	"github.com/nuqs-org/nuqs/internal/check"
+	"github.com/nuqs-org/nuqs/internal/diff"
 	"github.com/nuqs-org/nuqs/internal/engine"
 	"github.com/nuqs-org/nuqs/internal/model"
 	"github.com/nuqs-org/nuqs/internal/output"
@@ -753,21 +754,27 @@ type findingInstance struct {
 	Hostnames     []string
 	EvidenceLines []string
 	ServiceDetail string
+	FirstSeen     time.Time
+	LastSeen      time.Time
+	Reopened      bool
 }
 
 type findingData struct {
-	ScanID      string
-	ScanName    string
-	CheckID     string
-	HasCheck    bool
-	Title       string
-	Description string
-	Severity    string
-	Fix         string
-	Looks       string // what the check looks at, like "ports 23 · telnet"
-	References  []check.Reference
-	Instances   []findingInstance
-	HostCount   int
+	ScanID        string
+	CurrentScanID int64
+	ScanName      string
+	CheckID       string
+	HasCheck      bool
+	Title         string
+	Description   string
+	Severity      string
+	Fix           string
+	Looks         string // what the check looks at, like "ports 23 · telnet"
+	References    []check.Reference
+	Instances     []findingInstance
+	Timelines     []diff.Timeline
+	ReopenedHosts []string
+	HostCount     int
 }
 
 func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
@@ -777,10 +784,12 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := r.PathValue("check")
-	data := findingData{ScanID: s.ID, ScanName: s.Name, CheckID: id}
+	curID, _ := strconv.ParseInt(s.ID, 10, 64)
+	data := findingData{ScanID: s.ID, CurrentScanID: curID, ScanName: s.Name, CheckID: id}
 	filters := readFindingFilters(r.URL.Query())
 	hostNames, svcDetails := indexReportServices(s.Report.Hosts)
 	hosts := map[string]bool{}
+	var findingIDs []string
 	for _, f := range s.Report.Findings {
 		if f.CheckID != id {
 			continue
@@ -795,6 +804,7 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 				EvidenceLines: splitLines(f.Evidence),
 				ServiceDetail: svcDetails[serviceKey(f.Host, f.Port, f.Protocol)],
 			})
+			findingIDs = append(findingIDs, f.ID)
 			hosts[f.Host] = true
 		}
 	}
@@ -803,6 +813,21 @@ func (h *Handler) findingPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data.HostCount = len(hosts)
+	timelines := h.Scans.FindingTimelines(s.ID, findingIDs)
+	for i := range data.Instances {
+		inst := &data.Instances[i]
+		tl, ok := timelines[inst.ID]
+		if !ok {
+			continue
+		}
+		inst.FirstSeen = tl.FirstSeen
+		inst.LastSeen = tl.LastSeen
+		inst.Reopened = tl.Reopened
+		data.Timelines = append(data.Timelines, tl)
+		if tl.Reopened {
+			data.ReopenedHosts = append(data.ReopenedHosts, fmt.Sprintf("%s:%d", inst.Host, inst.Port))
+		}
+	}
 	back := "/scans/" + s.ID + "?tab=vulns"
 	if filters.Active() {
 		back += "&" + strings.TrimPrefix(filters.DetailQuery(), "?")
