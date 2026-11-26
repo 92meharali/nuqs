@@ -11,7 +11,7 @@
 
 <p align="center">
   A non-overengineered, open-source vulnerability assessment tool built on Nmap.<br>
-  Our final year project, aiming to be a simpler and more trustworthy alternative to Nessus.
+  Simple, reliable and trust-worthy   
 </p>
 
 <p align="center">
@@ -32,7 +32,7 @@
 
 ## Quick start
 
-You need Go 1.24+ and Nmap.
+You need Go 1.27+ and Nmap.
 
 ```bash
 go build -o nuqs ./cmd/nuqs
@@ -53,7 +53,7 @@ go build -o nuqs ./cmd/nuqs
 | `test/integration` | full scan test with the real Nmap |
 | `docs/` | the website, including the [roadmap](docs/roadmap.md) and [what's done](docs/progress.md) |
 
-The full map (diagram plus every file) is in [docs/architecture.md](docs/architecture.md). It's rebuilt from the code on every push.
+The full map (diagram plus every file) is on the [website](https://nuqs-org.github.io/nuqs/architecture/). It's rebuilt from the code on every docs build.
 
 ## Develop
 
@@ -61,7 +61,7 @@ The full map (diagram plus every file) is in [docs/architecture.md](docs/archite
 go test -race ./...                                  # unit tests
 go test -tags integration ./test/integration         # needs nmap
 golangci-lint run                                    # lint, also checks every public thing has a doc comment
-go run ./tools/archdiagram                           # rebuild the architecture page (CI does this on every push)
+go run ./tools/archdiagram                           # build the architecture page locally (the docs build does this too)
 ./scripts/docs.sh                                    # docs website at http://127.0.0.1:8000 (installs what it needs)
 ```
 

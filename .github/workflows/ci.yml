@@ -18,8 +18,8 @@ jobs:
     name: Tests, race detector and coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
@@ -46,13 +46,13 @@ jobs:
     name: Lint (and doc comments)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-      - uses: golangci/golangci-lint-action@v8
+      - uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.5
+          version: v2.15
 
   fuzz:
     name: Fuzz ${{ matrix.pkg }}
@@ -64,9 +64,11 @@ jobs:
           - { pkg: ./internal/target, fn: FuzzParse }
           - { pkg: ./internal/nmap, fn: FuzzParse }
           - { pkg: ./internal/version, fn: FuzzCompare }
+          - { pkg: ./internal/sshprobe, fn: FuzzReadPacket }
+          - { pkg: ./checks/mongodbnoauth, fn: FuzzReply }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
       - name: Fuzz for 30 seconds
@@ -76,8 +78,8 @@ jobs:
     name: Integration (real Nmap)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
       - name: Install Nmap
@@ -85,12 +87,34 @@ jobs:
       - name: Run
         run: go test -tags integration -v -count=1 ./test/integration
 
+  lab:
+    name: Lab
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Install Nmap
+        run: sudo apt-get update && sudo apt-get install -y nmap
+      - run: ./scripts/lab.sh
+        env:
+          LAB_OUT: lab-report.json
+      # When the report changes, download this, check it, and commit it as lab/expected-report.json.
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: lab-report
+          path: lab-report.json
+          if-no-files-found: ignore
+
   build:
     name: Build and smoke test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
       - name: Build
@@ -111,8 +135,8 @@ jobs:
         goos: [darwin, windows]
         goarch: [amd64, arm64]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
       - run: GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o /dev/null ./...
@@ -124,8 +148,8 @@ jobs:
     runs-on: macos-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
       - run: go build -o nuqs ./cmd/nuqs
@@ -139,8 +163,8 @@ jobs:
     name: Known vulnerabilities (govulncheck)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
       - run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...

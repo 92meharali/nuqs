@@ -96,11 +96,11 @@ The docs site exports to one PDF for submission.
 - [ ] GitHub Pages on (Settings, Pages, Source: GitHub Actions), default branch protected
 - [ ] Project email `fyp26_nuqs@gmail.com` made, its GitHub account owns `nuqs-org`, advisor and `undergradoffice.fos@itu.edu.pk` added as collaborators
 - [ ] Every teammate builds Nuqs, scans their own router, and merges one PR
-- [ ] **Test lab:** `lab/docker-compose.yml` with real services: vsftpd with anonymous login, a Telnet server, nginx without headers, an old OpenSSH, a TLS 1.0 server, Redis and MongoDB with no login
-- [ ] Lab CI job: scan the lab, the result must match a saved expected report exactly
-- [ ] `internal/version`: compare versions like each ecosystem does (semver, Debian, RPM, OpenSSH style `9.6p1`)
-- [ ] `confidence` on every finding: `confirmed` (we proved it) or `inferred` (from the version)
-- [ ] 5 checks: `tls-deprecated-protocols`, `ssh-password-auth`, `ssh-weak-algorithms`, `redis-no-auth`, `mongodb-no-auth`
+- [x] **Test lab:** `lab/docker-compose.yml` with real services: vsftpd with anonymous login, a Telnet server, nginx without headers, an old OpenSSH, a TLS 1.0 server, Redis and MongoDB with no login
+- [x] Lab CI job: scan the lab, the result must match a saved expected report exactly
+- [x] `internal/version`: compare versions like each ecosystem does (semver, Debian, RPM, OpenSSH style `9.6p1`)
+- [x] `confidence` on every finding: `confirmed` (we proved it) or `inferred` (from the version)
+- [x] 5 checks: `tls-deprecated-protocols`, `ssh-password-auth`, `ssh-weak-algorithms`, `redis-no-auth`, `mongodb-no-auth`
 - [ ] **API and UI:** wireframes for every page (new scan, live scan, results, finding detail, history, diff)
 - [ ] **Docs:** background, survey, scope
 - [ ] Everyone starts [The Missing Semester](https://missing.csail.mit.edu/) (finish by 3 Dec)
@@ -112,9 +112,9 @@ The docs site exports to one PDF for submission.
 
 **Goal:** scans are saved, every scan shows what changed, and it all works from the browser.
 
-- [ ] SQLite with `modernc.org/sqlite` (pure Go, our first dependency, reason written in [Decisions](design/decisions.md))
-- [ ] `internal/store`: scan runs, hosts, services, findings, check errors, simple numbered migrations
-- [ ] Every scan is saved (`--no-save` to skip), `nuqs history`, `nuqs show <run>`
+- [x] SQLite with `modernc.org/sqlite` (pure Go, our first dependency, reason written in [Decisions](design/decisions.md))
+- [x] `internal/store`: scan runs, hosts, services, findings, check errors, simple numbered migrations
+- [x] Every scan is saved (`--no-save` to skip), `nuqs history`, `nuqs show <run>`
 - [ ] Compare runs with stable finding IDs: **new**, **fixed**, **still open**, plus `first_seen` and `last_seen`
 - [ ] `nuqs diff <old> <new>`, and a short "since last scan" summary after every scan
 - [ ] `--fail-on high` exits with code 3 when there's a finding at or above that level

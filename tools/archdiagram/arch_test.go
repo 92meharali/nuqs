@@ -83,21 +83,82 @@ func TestScanFixture(t *testing.T) {
 	}
 }
 
+// useFixtureLayers swaps in layers for the testdata repo for one test.
+func useFixtureLayers(t *testing.T) {
+	t.Helper()
+	old := layers
+	layers = []Layer{
+		{"Programs", []string{"cmd/*"}},
+		{"Checks", []string{"checks/*"}},
+		{"Middle", []string{"b"}},
+		{"Base", []string{"a", "c"}},
+	}
+	t.Cleanup(func() { layers = old })
+}
+
+func TestLayerProblems(t *testing.T) {
+	ls := []Layer{{"Top", []string{"internal/cli"}}, {"Bottom", []string{"internal/model"}}}
+	r := &Repo{Packages: []Package{
+		{Dir: "internal/cli", Imports: []string{"internal/model"}},
+		{Dir: "internal/model", Imports: []string{"internal/cli"}}, // uses a layer above
+		{Dir: "internal/new"},          // in no layer
+		{Dir: "tools/gen"},             // dev tools don't need a layer
+		{Dir: "smoke", TestOnly: true}, // neither do test-only packages
+	}}
+	got := LayerProblems(r, ls)
+	if len(got) != 2 ||
+		!strings.Contains(got[0], "internal/model (Bottom) uses internal/cli (Top)") ||
+		!strings.Contains(got[1], "internal/new isn't in a layer") {
+		t.Errorf("problems: %q", got)
+	}
+}
+
+// TestRealRepoLayers keeps the real diagram honest: every Nuqs package is
+// in a layer, and none uses a layer above its own.
+func TestRealRepoLayers(t *testing.T) {
+	r, err := Scan("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range LayerProblems(r, layers) {
+		t.Error(p)
+	}
+}
+
+func TestDiagramSkipsDevFolders(t *testing.T) {
+	r := &Repo{Packages: []Package{
+		{Dir: "internal/model"},
+		{Dir: "internal/cli", Imports: []string{"internal/model"}},
+		{Dir: "tools/gen", Imports: []string{"internal/model"}},
+		{Dir: "lab", Imports: []string{"internal/model"}},
+	}}
+	var b strings.Builder
+	renderDiagram(&b, r, []Layer{{"Top", []string{"internal/cli", "lab", "tools/gen"}}, {"Empty", nil}, {"Bottom", []string{"internal/model"}}})
+	d := b.String()
+	if strings.Contains(d, "gen") || strings.Contains(d, "n_lab") || strings.Contains(d, "Empty") || !strings.Contains(d, "n_internal_cli ~~~ n_internal_model") || !strings.Contains(d, "layer0 --> layer2") {
+		t.Errorf("dev folders and empty layers should be left out:\n%s", d)
+	}
+}
+
 func TestRenderFixture(t *testing.T) {
 	r, err := Scan(copyFixture(t))
 	if err != nil {
 		t.Fatal(err)
 	}
+	useFixtureLayers(t)
 	page := Render(r)
 	for _, want := range []string{
-		"```mermaid\nflowchart LR\n",
-		`n_checks__["checks/*<br/><small>x, y</small>"]`, // check packages collapse into one box
-		"n_b --> n_a",
-		"n_checks__ --> n_a",
-		"n_checks__ --> n_b",
-		"n_cmd_app --> n_b",
-		"n_smoke -.-> n_b", // test-only packages get dotted arrows
-		"Dotted arrows come from test-only packages.",
+		"```mermaid\nflowchart TB\n",
+		"subgraph layer0 [\"Programs\"]\n",
+		`n_checks__["<b>checks/*</b><br/><small>x, y</small>"]`, // check packages collapse into one box
+		`n_a["<b>a</b>"]`,                                       // a top-level package isn't repeated as its path
+		`n_cmd_app["<b>app</b><br/><small>cmd/app</small>"]`,
+		"n_cmd_app ~~~ n_checks__\n  n_checks__ ~~~ n_b\n  n_b ~~~ n_a\n", // keeps the rows in order
+		"layer0 --> layer1\n  layer1 --> layer2\n  layer2 --> layer3\n",   // one arrow from each row to the next
+		"style layer0 ",
+		"classDef cmd ", "class n_cmd_app cmd",
+		"classDef checks ", "class n_checks__ checks",
+		", and test-only packages, aren't drawn.",
 		"| `b` | The middle layer. | `a` |",
 		"| `checks/x` | Checks X \\| with a pipe. | `a` |", // pipes can't break the table
 		"| `checks/y` | - | `a`, `b` |",
@@ -138,15 +199,16 @@ func TestRenderFixture(t *testing.T) {
 			t.Errorf("page contains %q, but docs/ and test/ must be left out", gone)
 		}
 	}
-	if strings.Count(page, "n_checks__ --> n_a") != 1 {
-		t.Error("collapsed boxes must not repeat the same arrow")
+	if strings.Count(page, "n_checks__[") != 1 {
+		t.Error("collapsed folders are one box")
 	}
-	if strings.Contains(page, "n_checks__ --> n_checks__") {
-		t.Error("no arrows from a box to itself")
+	if strings.Contains(page, "n_smoke") || strings.Contains(page, "n_b -->") {
+		t.Error("test-only packages and arrows between single packages are left out of the diagram")
 	}
 }
 
 func TestRunWritesAndChecks(t *testing.T) {
+	useFixtureLayers(t)
 	root := copyFixture(t)
 	if code := run(root, true); code != 1 {
 		t.Error("-check must fail before the page exists")
@@ -169,6 +231,12 @@ func TestRunWritesAndChecks(t *testing.T) {
 	os.WriteFile(filepath.Join(root, "c", "c.go"), []byte("// Package c is new.\npackage c\n"), 0o644)
 	if code := run(root, true); code != 1 {
 		t.Error("-check must notice a new package")
+	}
+
+	// A package that uses a layer above it fails, even when writing.
+	os.WriteFile(filepath.Join(root, "c", "c.go"), []byte("// Package c is new.\npackage c\n\nimport _ \"example.com/demo/b\"\n"), 0o644)
+	if code := run(root, false); code != 1 {
+		t.Error("a package using a layer above it must fail")
 	}
 }
 

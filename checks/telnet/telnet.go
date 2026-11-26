@@ -20,16 +20,24 @@ type Check struct{}
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "telnet-open",
-		Title:    "Unencrypted Telnet server",
-		Severity: model.Medium,
-		Fix:      "Turn off Telnet and use SSH instead. Telnet sends passwords as plain text, so anyone on the network can read them.",
-		Services: []string{"telnet"},
+		ID:               "telnet-open",
+		Title:            "Unencrypted Telnet server",
+		Severity:         model.Medium,
+		Fix:              "Turn off Telnet and use SSH instead. Telnet sends passwords as plain text, so anyone on the network can read them.",
+		RemediationTitle: "Replace Telnet with SSH",
+		Services:         []string{"telnet"},
 	}
 }
 
-// Run explains what Nmap found. It never fails.
+// Run explains what Nmap found. It never fails. If Nmap only guessed Telnet
+// from the port number, the finding is inferred, not confirmed.
 func (Check) Run(_ context.Context, t check.Target) (*check.Result, error) {
+	if t.Service.Guessed {
+		return &check.Result{
+			Evidence:   fmt.Sprintf("port %d/%s is open and Nmap guessed Telnet from the port number only", t.Service.Port, t.Service.Protocol),
+			Confidence: model.Inferred,
+		}, nil
+	}
 	what := strings.TrimSpace(t.Service.Product + " " + t.Service.Version)
 	if what == "" {
 		what = "a Telnet server"

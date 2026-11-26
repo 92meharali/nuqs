@@ -24,11 +24,19 @@ type Info struct {
 	Severity model.Severity // how bad it is when found
 	Fix      string         // what the user should do about it
 
+	// Share a remediation ID only when one action addresses both checks.
+	RemediationID    string
+	RemediationTitle string
+	RemediationFix   string // instructions for the shared action
+
 	// Where the check applies. A service matches if its port is in Ports OR
 	// its Nmap service name is in Services. Leave both empty to match every service.
 	Ports    []int
 	Services []string
 }
+
+// SSHKeyOnlyFix is the shared remediation for SSH credential-free and password login.
+const SSHKeyOnlyFix = "Require public-key authentication as the only SSH login method. First verify that an authorized key works and keep an existing admin session open. For OpenSSH, enable PubkeyAuthentication and set AuthenticationMethods publickey. Validate the configuration before reloading and verify a new key-only login before closing your admin session."
 
 // Target is what a check runs against: one host and one of its services.
 type Target struct {
@@ -47,6 +55,12 @@ func (t Target) Address() string {
 // Result is what a check returns when it finds something.
 type Result struct {
 	Evidence string // what we saw, in plain words, for example "server sent 230 after anonymous login"
+
+	// Confidence is how sure the check is. Leave it empty when the check saw
+	// the problem itself, that counts as model.Confirmed. Set model.Inferred
+	// when the finding comes only from a version number or from Nmap guessing
+	// the service from the port.
+	Confidence model.Confidence
 }
 
 // Check is the interface every check implements.

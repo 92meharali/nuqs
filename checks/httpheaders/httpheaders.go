@@ -26,11 +26,12 @@ type Check struct {
 // Info describes the check.
 func (Check) Info() check.Info {
 	return check.Info{
-		ID:       "http-security-headers",
-		Title:    "Web server is missing security headers",
-		Severity: model.Low,
-		Fix:      "Configure the web server to send the missing headers. Most servers can add them in one line of config.",
-		Services: []string{"http", "https", "http-alt", "http-proxy", "https-alt"},
+		ID:               "http-security-headers",
+		Title:            "Web server is missing security headers",
+		Severity:         model.Low,
+		Fix:              "Configure the web server to send the missing headers. Most servers can add them in one line of config.",
+		RemediationTitle: "Add HTTP security headers",
+		Services:         []string{"http", "https", "http-alt", "http-proxy", "https-alt"},
 	}
 }
 

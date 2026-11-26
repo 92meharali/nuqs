@@ -78,7 +78,7 @@ func TestFindingsAndApplicability(t *testing.T) {
 	// Worst first: the medium telnet finding comes before the low web one.
 	f := rep.Findings[0]
 	want := model.Finding{
-		ID: "tel|10.0.0.2|23/tcp", CheckID: "tel", Title: "tel title", Severity: model.Medium,
+		ID: "tel|10.0.0.2|23/tcp", CheckID: "tel", Title: "tel title", Severity: model.Medium, Confidence: model.Confirmed,
 		Host: "10.0.0.2", Port: 23, Protocol: "tcp", Evidence: "telnet open", Fix: "tel fix",
 	}
 	if f != want {
@@ -257,6 +257,50 @@ func TestEvents(t *testing.T) {
 	}
 }
 
+// progressScanner is a fakeScanner that also reports progress.
+type progressScanner struct {
+	fakeScanner
+	updates []ScannerProgress
+}
+
+func (p progressScanner) ScanWithProgress(_ context.Context, _ []string, progress func(ScannerProgress)) ([]model.Host, error) {
+	for _, u := range p.updates {
+		progress(u)
+	}
+	return p.hosts, p.err
+}
+
+func TestScannerProgressIsPassedOn(t *testing.T) {
+	updates := []ScannerProgress{{Task: "Connect Scan", Percent: 40, Remaining: 3 * time.Second}, {Task: "Service scan", Percent: 90}}
+	var got []Event
+	e := &Engine{
+		Scanner: progressScanner{fakeScanner: fakeScanner{hosts: twoHosts}, updates: updates},
+		Checks:  []check.Check{newCheck("all", model.Low, nil, clean)},
+		OnEvent: func(ev Event) { got = append(got, ev) },
+	}
+	if _, err := e.Run(context.Background(), nil); err != nil {
+		t.Fatal(err)
+	}
+	if got[0].Kind != DiscoveryStarted || got[1].Kind != ScanProgress || got[2].Kind != ScanProgress || got[3].Kind != DiscoveryDone {
+		t.Fatalf("progress should come between discovery start and done: %v", got[:4])
+	}
+	if got[1].Progress != updates[0] || got[2].Progress != updates[1] {
+		t.Errorf("progress changed on the way: %+v %+v", got[1].Progress, got[2].Progress)
+	}
+
+	// Without OnEvent nobody's listening, so the plain Scan is used.
+	e.OnEvent = nil
+	if rep, err := e.Run(context.Background(), nil); err != nil || len(rep.Hosts) != 2 {
+		t.Errorf("without OnEvent: %v %v", rep, err)
+	}
+	// A failing scan with progress still fails cleanly.
+	e.Scanner = progressScanner{fakeScanner: fakeScanner{err: errors.New("boom")}}
+	e.OnEvent = func(Event) {}
+	if _, err := e.Run(context.Background(), nil); err == nil || !strings.Contains(err.Error(), "boom") {
+		t.Errorf("want the scanner's error, got %v", err)
+	}
+}
+
 func TestSetupErrors(t *testing.T) {
 	if _, err := (&Engine{}).Run(context.Background(), nil); err == nil {
 		t.Error("missing scanner should fail")
@@ -301,5 +345,42 @@ func TestCompareAddr(t *testing.T) {
 	}
 	if compareAddr("10.0.0.1", "10.0.0.1") != 0 {
 		t.Error("equal addresses should compare equal")
+	}
+}
+
+func TestConfidence(t *testing.T) {
+	result := func(c model.Confidence) func(context.Context, check.Target) (*check.Result, error) {
+		return func(context.Context, check.Target) (*check.Result, error) {
+			return &check.Result{Evidence: "e", Confidence: c}, nil
+		}
+	}
+	cases := []struct {
+		name string
+		in   model.Confidence
+		want model.Confidence // empty means the result must become an error
+	}{
+		{"empty means confirmed", "", model.Confirmed},
+		{"confirmed", model.Confirmed, model.Confirmed},
+		{"inferred", model.Inferred, model.Inferred},
+		{"unknown", "maybe", ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			tel := newCheck("tel", model.Medium, []string{"telnet"}, result(c.in))
+			e := &Engine{Scanner: fakeScanner{hosts: twoHosts}, Checks: []check.Check{tel}}
+			rep, err := e.Run(context.Background(), []string{"10.0.0.2"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if c.want == "" {
+				if len(rep.Findings) != 0 || len(rep.Errors) != 1 || !strings.Contains(rep.Errors[0].Error, "unknown confidence") {
+					t.Fatalf("an unknown confidence must be an error, not a finding: %+v / %+v", rep.Findings, rep.Errors)
+				}
+				return
+			}
+			if len(rep.Findings) != 1 || rep.Findings[0].Confidence != c.want {
+				t.Fatalf("want one %s finding, got %+v", c.want, rep.Findings)
+			}
+		})
 	}
 }
