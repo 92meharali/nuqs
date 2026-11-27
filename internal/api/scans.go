@@ -33,10 +33,10 @@ type Progress struct {
 	Percent     float64          `json:"percent"`             // the whole scan, 0 to 100, never goes down
 	Remaining   string           `json:"remaining,omitempty"` // like "about 40s left"
 	HostsFound  int              `json:"hosts_found"`
-	Hosts       []model.Host     `json:"hosts,omitempty"`
-	Findings    int              `json:"findings"`
-	LatestHost  string           `json:"latest_host,omitempty"`
-	LatestOpen  int              `json:"latest_open"`
+	Hosts       []model.Host     `json:"hosts,omitempty"`       // hosts discovered so far
+	Findings    int              `json:"findings"`              // findings recorded so far
+	LatestHost  string           `json:"latest_host,omitempty"` // most recently discovered host
+	LatestOpen  int              `json:"latest_open"`           // open services on LatestHost
 	ChecksDone  int              `json:"checks_done"`
 	ChecksTotal int              `json:"checks_total"`
 	Seconds     float64          `json:"seconds"` // how long it has run
