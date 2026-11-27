@@ -349,10 +349,14 @@ if (watched) {
     const set = (elementId, text) => { if (byId(elementId)) byId(elementId).textContent = text; };
     set("statusLabel", "Scanning · " + percent);
     set("phase", p.phase || "Working");
+    const latest = p.latest_host ? "Found " + p.latest_host + " · " + p.latest_open + (p.latest_open === 1 ? " open service" : " open services") : (p.phase || "Working");
+    set("liveActivity", latest);
     set("percentText", percent);
     set("remaining", p.remaining || "working out the time left");
     set("elapsed", elapsed(p.seconds));
     set("hostsFound", p.hosts_found + (p.hosts_found === 1 ? " host found" : " hosts found"));
+    set("liveChecks", p.checks_done + " checks complete" + (p.checks_total ? " of " + p.checks_total : ""));
+    set("liveFindings", p.findings + (p.findings === 1 ? " finding" : " findings"));
     const liveHosts = byId("liveHosts");
     if (liveHosts && Array.isArray(p.hosts)) {
       liveHosts.replaceChildren(...p.hosts.map(host => {

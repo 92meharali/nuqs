@@ -34,6 +34,9 @@ type Progress struct {
 	Remaining   string           `json:"remaining,omitempty"` // like "about 40s left"
 	HostsFound  int              `json:"hosts_found"`
 	Hosts       []model.Host     `json:"hosts,omitempty"`
+	Findings    int              `json:"findings"`
+	LatestHost  string           `json:"latest_host,omitempty"`
+	LatestOpen  int              `json:"latest_open"`
 	ChecksDone  int              `json:"checks_done"`
 	ChecksTotal int              `json:"checks_total"`
 	Seconds     float64          `json:"seconds"` // how long it has run
@@ -248,18 +251,25 @@ func (h *Handler) scanEvents(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			return
 		}
-		data, _ := json.Marshal(Progress{
+		progress := Progress{
 			Status:      s.Status,
 			Phase:       s.Phase,
 			Percent:     s.Percent,
 			Remaining:   s.Remaining,
 			HostsFound:  s.HostsFound,
 			Hosts:       reportHosts(s),
+			Findings:    reportFindingCount(s),
 			ChecksDone:  s.ChecksDone,
 			ChecksTotal: s.ChecksTotal,
 			Seconds:     s.Elapsed().Seconds(),
 			Error:       s.Error,
-		})
+		}
+		if len(progress.Hosts) > 0 {
+			last := progress.Hosts[len(progress.Hosts)-1]
+			progress.LatestHost = last.Address
+			progress.LatestOpen = len(last.Services)
+		}
+		data, _ := json.Marshal(progress)
 		if _, err := fmt.Fprintf(w, "data: %s\n\n", data); err != nil {
 			return
 		}
@@ -284,6 +294,13 @@ func reportHosts(s tools.Scan) []model.Host {
 		return nil
 	}
 	return s.Report.Hosts
+}
+
+func reportFindingCount(s tools.Scan) int {
+	if s.Report == nil {
+		return 0
+	}
+	return len(s.Report.Findings)
 }
 
 // LocalOnly refuses requests whose Host isn't this server, like

@@ -23,6 +23,8 @@
       <p class="phase" id="phase" aria-live="polite">{{.Phase}}</p>
       <div class="progressBar" role="progressbar" aria-label="Scan progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{whole .Percent}}" id="progressBar"><i id="progressFill" style="width:{{whole .Percent}}%"></i></div>
       <p class="progressNumbers"><span id="percentText">{{whole .Percent}}%</span> · <span id="remaining">{{if .Remaining}}{{.Remaining}}{{else}}working out the time left{{end}}</span> · <span id="elapsed" class="mono">{{duration .Elapsed.Seconds}}</span> so far · <span id="hostsFound">{{.HostsFound}} hosts found</span></p>
+      <p class="liveActivity" id="liveActivity" aria-live="polite">Starting the scan…</p>
+      <p class="liveStats"><span id="liveChecks">0 checks complete</span> · <span id="liveFindings">0 findings</span></p>
       <div id="liveHosts" class="liveHosts" aria-live="polite"></div>
     </div>
   </div>
