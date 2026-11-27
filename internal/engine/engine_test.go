@@ -307,10 +307,21 @@ func TestStreamingScannerStartsChecksBeforeDiscoveryFinishes(t *testing.T) {
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	for i, kind := range events {
-		if kind == DiscoveryDone && i < 3 {
-			t.Fatalf("discovery finished before host checks started: %v", events)
+	first := func(want EventKind) int {
+		for i, got := range events {
+			if got == want {
+				return i
+			}
 		}
+		return -1
+	}
+	hostAt, checksAt := first(HostFound), first(ChecksStarted)
+	discoveryAt, doneAt, checkDoneAt := first(DiscoveryDone), first(ScanDone), first(CheckDone)
+	if hostAt < 0 || checksAt < 0 || discoveryAt < 0 || doneAt < 0 || checkDoneAt < 0 {
+		t.Fatalf("missing streaming events: %v", events)
+	}
+	if !(hostAt < checksAt && checksAt < checkDoneAt && checksAt < discoveryAt && discoveryAt < doneAt) {
+		t.Fatalf("streaming events out of order: %v", events)
 	}
 }
 
