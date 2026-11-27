@@ -884,7 +884,9 @@ func (a *App) progress(ev engine.Event) {
 	case engine.DiscoveryDone:
 		fmt.Fprintf(a.Stderr, "Found %d %s.\n", ev.Count, plural(ev.Count, "host", "hosts"))
 	case engine.ChecksStarted:
-		fmt.Fprintf(a.Stderr, "Running %d %s...\n", ev.Count, plural(ev.Count, "check", "checks"))
+		if ev.Count > 0 {
+			fmt.Fprintf(a.Stderr, "Running %d %s...\n", ev.Count, plural(ev.Count, "check", "checks"))
+		}
 	case engine.ScanDone:
 		fmt.Fprintf(a.Stderr, "Done at %s.\n\n", time.Now().Format("15:04:05"))
 	}

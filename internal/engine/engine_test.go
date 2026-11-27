@@ -283,9 +283,15 @@ func TestStreamingScannerStartsChecksBeforeDiscoveryFinishes(t *testing.T) {
 		return &check.Result{Evidence: "checked"}, nil
 	})
 	s := streamingScanner{host: twoHosts[0], release: release}
+	var mu sync.Mutex
+	var events []EventKind
 	done := make(chan struct{})
 	go func() {
-		_, _ = (&Engine{Scanner: s, Checks: []check.Check{c}}).Run(context.Background(), nil)
+		_, _ = (&Engine{Scanner: s, Checks: []check.Check{c}, OnEvent: func(ev Event) {
+			mu.Lock()
+			events = append(events, ev.Kind)
+			mu.Unlock()
+		}}).Run(context.Background(), nil)
 		close(done)
 	}()
 	select {
@@ -299,26 +305,33 @@ func TestStreamingScannerStartsChecksBeforeDiscoveryFinishes(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("streaming scan did not finish")
 	}
+	mu.Lock()
+	defer mu.Unlock()
+	for i, kind := range events {
+		if kind == DiscoveryDone && i < 3 {
+			t.Fatalf("discovery finished before host checks started: %v", events)
+		}
+	}
 }
 
 func TestStreamingScannerReturnsPartialReportWhenStopped(t *testing.T) {
 	release := make(chan struct{})
+	found := make(chan struct{})
 	c := newCheck("web", model.Low, []string{"http"}, func(context.Context, check.Target) (*check.Result, error) {
+		close(found)
 		return &check.Result{Evidence: "checked"}, nil
 	})
 	ctx, cancel := context.WithCancel(context.Background())
-	started := make(chan struct{})
 	s := streamingScanner{host: twoHosts[0], release: release}
 	go func() {
-		<-started
+		<-found
 		cancel()
 	}()
-	close(started)
 	rep, err := (&Engine{Scanner: s, Checks: []check.Check{c}}).Run(ctx, nil)
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("err = %v, want context.Canceled", err)
 	}
-	if rep == nil || len(rep.Hosts) == 0 {
+	if rep == nil || len(rep.Hosts) == 0 || len(rep.Findings) == 0 {
 		t.Fatalf("partial report = %#v, want discovered hosts", rep)
 	}
 }

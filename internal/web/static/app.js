@@ -352,6 +352,7 @@ if (watched) {
     set("percentText", percent);
     set("remaining", p.remaining || "working out the time left");
     set("elapsed", elapsed(p.seconds));
+    set("hostsFound", p.hosts_found + (p.hosts_found === 1 ? " host found" : " hosts found"));
     if (byId("progressFill")) {
       byId("progressFill").style.width = p.percent + "%";
       byId("progressBar").setAttribute("aria-valuenow", String(Math.floor(p.percent)));
