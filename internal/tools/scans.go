@@ -122,7 +122,7 @@ type entry struct {
 // time left counts down between updates. Callers hold m.mu.
 func (e *entry) snapshot() Scan {
 	s := e.scan
-	if e.scan.Report != nil {
+	if e.scan.Report != nil && e.scan.Status == ScanRunning {
 		report := *e.scan.Report
 		report.Targets = slices.Clone(e.scan.Report.Targets)
 		report.Hosts = slices.Clone(e.scan.Report.Hosts)
