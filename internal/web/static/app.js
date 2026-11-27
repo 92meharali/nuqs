@@ -353,6 +353,15 @@ if (watched) {
     set("remaining", p.remaining || "working out the time left");
     set("elapsed", elapsed(p.seconds));
     set("hostsFound", p.hosts_found + (p.hosts_found === 1 ? " host found" : " hosts found"));
+    const liveHosts = byId("liveHosts");
+    if (liveHosts && Array.isArray(p.hosts)) {
+      liveHosts.replaceChildren(...p.hosts.map(host => {
+        const item = document.createElement("span");
+        item.className = "liveHost mono";
+        item.textContent = host.address + " · " + host.services.length + (host.services.length === 1 ? " service" : " services");
+        return item;
+      }));
+    }
     if (byId("progressFill")) {
       byId("progressFill").style.width = p.percent + "%";
       byId("progressBar").setAttribute("aria-valuenow", String(Math.floor(p.percent)));

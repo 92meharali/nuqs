@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/nuqs-org/nuqs/internal/auth"
+	"github.com/nuqs-org/nuqs/internal/model"
 	"github.com/nuqs-org/nuqs/internal/output"
 	"github.com/nuqs-org/nuqs/internal/tools"
 )
@@ -32,6 +33,7 @@ type Progress struct {
 	Percent     float64          `json:"percent"`             // the whole scan, 0 to 100, never goes down
 	Remaining   string           `json:"remaining,omitempty"` // like "about 40s left"
 	HostsFound  int              `json:"hosts_found"`
+	Hosts       []model.Host     `json:"hosts,omitempty"`
 	ChecksDone  int              `json:"checks_done"`
 	ChecksTotal int              `json:"checks_total"`
 	Seconds     float64          `json:"seconds"` // how long it has run
@@ -252,6 +254,7 @@ func (h *Handler) scanEvents(w http.ResponseWriter, r *http.Request) {
 			Percent:     s.Percent,
 			Remaining:   s.Remaining,
 			HostsFound:  s.HostsFound,
+			Hosts:       reportHosts(s),
 			ChecksDone:  s.ChecksDone,
 			ChecksTotal: s.ChecksTotal,
 			Seconds:     s.Elapsed().Seconds(),
@@ -274,6 +277,13 @@ func (h *Handler) scanEvents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func reportHosts(s tools.Scan) []model.Host {
+	if s.Report == nil {
+		return nil
+	}
+	return s.Report.Hosts
 }
 
 // LocalOnly refuses requests whose Host isn't this server, like
