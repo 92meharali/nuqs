@@ -320,7 +320,7 @@ func TestStreamingScannerStartsChecksBeforeDiscoveryFinishes(t *testing.T) {
 	if hostAt < 0 || checksAt < 0 || discoveryAt < 0 || doneAt < 0 || checkDoneAt < 0 {
 		t.Fatalf("missing streaming events: %v", events)
 	}
-	if !(hostAt < checksAt && checksAt < checkDoneAt && checksAt < discoveryAt && discoveryAt < doneAt) {
+	if hostAt >= checksAt || checksAt >= checkDoneAt || checksAt >= discoveryAt || discoveryAt >= doneAt {
 		t.Fatalf("streaming events out of order: %v", events)
 	}
 }
