@@ -73,7 +73,7 @@ const usage = `Nuqs is a non-overengineered vulnerability assessment tool.
 
 Usage:
   nuqs scan [flags] <target>...        scan targets (IP, CIDR, range like 10.0.0.1-20, or hostname)
-  nuqs history [-n 20]                 list saved scans, newest first
+  nuqs history [-n 20] [--json]       list saved scans, newest first
   nuqs show [--json] <id>              print a saved scan again
   nuqs show --finding <id> [scan-id]   timeline of one finding across scans
   nuqs diff [--json] <old> [new]       what changed between two saved scans
@@ -352,7 +352,7 @@ func (a *App) history(args []string) int {
 		return ExitUsage
 	}
 	if fs.NArg() > 0 || *limit < 0 {
-		fmt.Fprintln(a.Stderr, "Usage: nuqs history [-n 20]")
+		fmt.Fprintln(a.Stderr, "Usage: nuqs history [-n 20] [--json]")
 		return ExitUsage
 	}
 	st, err := store.Open(a.dataDir())
