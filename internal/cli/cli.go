@@ -344,6 +344,7 @@ func (a *App) history(args []string) int {
 	fs := flag.NewFlagSet("history", flag.ContinueOnError)
 	fs.SetOutput(a.Stderr)
 	limit := fs.Int("n", 20, "how many scans to list, 0 for all")
+	jsonOutput := fs.Bool("json", false, "print the history as JSON")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			return ExitOK
@@ -366,7 +367,30 @@ func (a *App) history(args []string) int {
 		return ExitError
 	}
 	if len(runs) == 0 {
+		if *jsonOutput {
+			_, _ = fmt.Fprintln(a.Stdout, "[]")
+			return ExitOK
+		}
 		fmt.Fprintln(a.Stdout, "No saved scans yet. Run one with: nuqs scan <target>")
+		return ExitOK
+	}
+	if *jsonOutput {
+		items := make([]map[string]any, 0, len(runs))
+		for _, r := range runs {
+			counts := map[string]int{}
+			for severity, count := range r.Findings {
+				if count > 0 {
+					counts[model.Severity(severity).String()] = count
+				}
+			}
+			items = append(items, map[string]any{
+				"id": r.ID, "started": r.Started, "status": r.Status,
+				"hosts": r.Hosts, "counts": counts, "name": r.Name,
+			})
+		}
+		if err := json.NewEncoder(a.Stdout).Encode(items); err != nil {
+			return ExitError
+		}
 		return ExitOK
 	}
 	tw := tabwriter.NewWriter(a.Stdout, 0, 0, 2, ' ', 0)

@@ -71,6 +71,31 @@ func TestHistoryNewestFirstAndLimit(t *testing.T) {
 	}
 }
 
+func TestHistoryJSON(t *testing.T) {
+	app, out, _ := newApp(t, &fakeRunner{})
+	if code := app.Run(context.Background(), []string{"scan", "10.0.0.1"}); code != ExitOK {
+		t.Fatal(code)
+	}
+	out.Reset()
+	if code := app.Run(context.Background(), []string{"history", "--json"}); code != ExitOK {
+		t.Fatalf("history --json exit %d", code)
+	}
+	var items []struct {
+		ID      int64          `json:"id"`
+		Started time.Time      `json:"started"`
+		Status  string         `json:"status"`
+		Hosts   int            `json:"hosts"`
+		Counts  map[string]int `json:"counts"`
+		Name    string         `json:"name"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &items); err != nil {
+		t.Fatalf("history --json: %v\n%s", err, out)
+	}
+	if len(items) != 1 || items[0].ID != 1 || items[0].Status != "completed" || items[0].Hosts != 3 || items[0].Counts["medium"] != 1 {
+		t.Fatalf("history --json = %+v", items)
+	}
+}
+
 func TestNoSave(t *testing.T) {
 	app, out, errOut := newApp(t, &fakeRunner{})
 	if code := app.Run(context.Background(), []string{"scan", "--no-save", "10.0.0.1"}); code != ExitOK {
