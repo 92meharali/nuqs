@@ -96,6 +96,28 @@ func TestHistoryJSON(t *testing.T) {
 	}
 }
 
+func TestHistoryJSONLimit(t *testing.T) {
+	app, out, _ := newApp(t, &fakeRunner{})
+	for _, target := range []string{"10.0.0.1", "10.0.0.2", "10.0.0.3"} {
+		if code := app.Run(context.Background(), []string{"scan", target}); code != ExitOK {
+			t.Fatal(code)
+		}
+	}
+	out.Reset()
+	if code := app.Run(context.Background(), []string{"history", "--json", "-n", "2"}); code != ExitOK {
+		t.Fatalf("history --json -n 2 exit %d", code)
+	}
+	var items []struct {
+		ID int64 `json:"id"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &items); err != nil {
+		t.Fatalf("history --json -n 2: %v\n%s", err, out)
+	}
+	if len(items) != 2 || items[0].ID != 3 || items[1].ID != 2 {
+		t.Fatalf("history --json -n 2 = %+v", items)
+	}
+}
+
 func TestNoSave(t *testing.T) {
 	app, out, errOut := newApp(t, &fakeRunner{})
 	if code := app.Run(context.Background(), []string{"scan", "--no-save", "10.0.0.1"}); code != ExitOK {
